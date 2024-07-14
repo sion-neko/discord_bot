@@ -20,7 +20,8 @@ async def on_ready():
     for server in bot.guilds:
         await bot.tree.sync(guild=discord.Object(id=server.id))
 
-    gem._initialize_talk()
+    gem.musuka_initialize()
+    gem.gemini_initialize()
     await bot.tree.sync()
     print(f"{bot.user}:起動完了")
 
@@ -33,10 +34,10 @@ async def on_command_error(ctx, error):
     await ctx.send(embed=ERROR_EMBED)
 
 
-@bot.tree.command(name="question", description="AIに質問")
-async def question(interaction: discord.Interaction, message: str):
+@bot.tree.command(name="talk", description="AIと会話")
+async def talk(interaction: discord.Interaction, message: str):
     await interaction.response.defer(thinking=True)
-    response = gem.question(message)
+    response = gem.gemini_talk(message)
     if response == ERROR:
         message = "> " + message
         await interaction.followup.send(message, embed=ERROR_EMBED)
@@ -45,9 +46,9 @@ async def question(interaction: discord.Interaction, message: str):
 
 
 @bot.tree.command(name="musuka", description="ムスカ大佐とお話♡")
-async def talk(interaction: discord.Interaction, message: str):
+async def char_talk(interaction: discord.Interaction, message: str):
     await interaction.response.defer(thinking=True)
-    response = gem.talk(message)
+    response = gem.char_talk(message)
     if response == ERROR:
         message = "> " + message
         await interaction.followup.send(message, embed=ERROR_EMBED)

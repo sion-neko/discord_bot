@@ -33,7 +33,8 @@ genai.configure(api_key=GOOGLE_API_KEY)
 class Gemini():
     def __init__(self):
         self.gemini_pro = genai.GenerativeModel("gemini-1.5-pro")
-        self.chat = self.gemini_pro.start_chat(history=[])
+        self.musuka_chat = self.gemini_pro.start_chat(history=[])
+        self.gemini_chat = self.gemini_pro.start_chat(history=[])
         
 
     def question(self, msg):
@@ -45,16 +46,35 @@ class Gemini():
             print(e)
             return -1
         
-    
-    def talk(self, msg):
+    def gemini_talk(self, msg):
         genai.configure(api_key=GOOGLE_API_KEY)
         try:
-            response = self.chat.send_message(msg, safety_settings=safety_config, generation_config=generation_config)
-            if len(self.chat.history) > 20:
-                a = self.chat.history.pop(2)
-                b = self.chat.history.pop(2)
-                self.gemini_pro.start_chat(history=self.chat.history)
-                print("下記の会話を削除。")
+            response = self.gemini_chat.send_message(msg, safety_settings=safety_config, generation_config=generation_config)
+            if len(self.gemini_chat.history) > 20:
+                a = self.gemini_chat.history.pop(0)
+                b = self.gemini_chat.history.pop(0)
+                self.gemini_pro.start_chat(history=self.gemini_chat.history)
+                print("下記の会話を削除-gemini。")
+                print("--------------")
+                print(f"{a.role}:{a.parts[0].text}")
+                print(f"{b.role}:{b.parts[0].text}")
+                print("--------------")
+            
+            return self._make_answer(msg, response.text)
+    
+        except Exception as e:
+            print(e)
+            return -1
+    
+    def char_talk(self, msg):
+        genai.configure(api_key=GOOGLE_API_KEY)
+        try:
+            response = self.musuka_chat.send_message(msg, safety_settings=safety_config, generation_config=generation_config)
+            if len(self.musuka_chat.history) > 20:
+                a = self.musuka_chat.history.pop(2)
+                b = self.musuka_chat.history.pop(2)
+                self.gemini_pro.start_chat(history=self.musuka_chat.history)
+                print("下記の会話を削除-character。")
                 print("--------------")
                 print(f"{a.role}:{a.parts[0].text}")
                 print(f"{b.role}:{b.parts[0].text}")
@@ -70,10 +90,10 @@ class Gemini():
         answer = "> "+ msg + "\n\n" + response
         return answer
     
-    def _initialize_talk(self):
+    def musuka_initialize(self):
         genai.configure(api_key=GOOGLE_API_KEY)
-        self.chat = self.gemini_pro.start_chat(history=[])
-        self.chat.send_message("あなたは、今からムスカ大佐です。ムスカ大佐の情報を記載するのでムスカ大佐のように振る舞ってください。\
+        self.musuka_chat = self.gemini_pro.start_chat(history=[])
+        self.musuka_chat.send_message("あなたは、今からムスカ大佐です。ムスカ大佐の情報を記載するのでムスカ大佐のように振る舞ってください。\
         ムスカ大佐の情報：\
         本名は「ロムスカ・パロ・ウル・ラピュタ」。\
         次のセリフで有名です。\
@@ -81,4 +101,9 @@ class Gemini():
         「目がぁぁー！目がぁぁぁぁぁぁぁー！！」は「バルス」というセリフに対して用いられます。\
         これから、あなた(ムスカ大佐)はいろいろ話かけられますが、優しく300文字以内で答えてあげてください。\
         遊びを提案されたら一緒に遊んであげてください。", safety_settings=safety_config, generation_config=generation_config)
+
+    def gemini_initialize(self):
+        genai.configure(api_key=GOOGLE_API_KEY)
+        self.gemini_chat = self.gemini_pro.start_chat(history=[])
+        self.gemini_chat.send_message("これから、あなたはいろいろ会話をすることになりますが、会話の返答は全て300文字以内で答えてあげてください。短い分には問題ありません。", safety_settings=safety_config, generation_config=generation_config)
 
