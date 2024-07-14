@@ -6,6 +6,7 @@ import googleAI
 import traceback
 from dotenv import load_dotenv
 import random
+from keep_alive import keep_alive
 
 load_dotenv() 
 API = api.API()
@@ -66,6 +67,8 @@ async def dog(interaction):
     await interaction.response.send_message(res)
 
 
+# Web サーバの立ち上げ
+keep_alive()
 try:
   bot.run(os.getenv('BOT_TOKEN'))
 except:
