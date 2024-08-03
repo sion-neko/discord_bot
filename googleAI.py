@@ -32,7 +32,7 @@ genai.configure(api_key=GOOGLE_API_KEY)
 
 class Gemini():
     def __init__(self):
-        self.gemini_pro = genai.GenerativeModel("gemini-1.5-pro")
+        self.gemini_pro = genai.GenerativeModel("gemini-1.5-flash")
         self.musuka_chat = self.gemini_pro.start_chat(history=[])
         self.gemini_chat = self.gemini_pro.start_chat(history=[])
         
