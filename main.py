@@ -7,6 +7,7 @@ import traceback
 from dotenv import load_dotenv
 import random
 from keep_alive import keep_alive
+import sys
 
 load_dotenv() 
 API = api.API()
@@ -24,6 +25,7 @@ async def on_ready():
     gem.musuka_initialize()
     gem.gemini_initialize()
     await bot.tree.sync()
+    print("python-version："+sys.version)
     print(f"{bot.user}:起動完了")
 
 @bot.event
