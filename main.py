@@ -46,9 +46,19 @@ async def talk(interaction: discord.Interaction, message: str):
     else:
         await interaction.followup.send(response)
 
-@bot.tree.command(name="r", description="ランダムな数字を出力します")
+@bot.tree.command(name="r", description="数字をランダム出力")
 async def r(interaction: discord.Interaction, num: int):
     result = random.randint(1, int(num))
+    await interaction.response.send_message(result)
+
+@bot.tree.command(name="r_sma", description="ずんだもんがスマブラSPのキャラを選ぶよ")
+async def r_suma(interaction):
+    with open("./data/smabra.txt") as f:
+            all_chara = f.readlines()
+    chara_no = random.randint(1, len(all_chara))
+
+    result = all_chara[chara_no]
+
     await interaction.response.send_message(result)
 
 @bot.tree.command(name="dog", description="わんちゃん")
