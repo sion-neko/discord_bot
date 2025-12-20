@@ -21,10 +21,13 @@ safety_config = [
     }
 ]
 
-generation_config = genai.types.GenerationConfig(
+def _create_generation_config(max_output_tokens=1000, temperature=1.0):
+    return genai.types.GenerationConfig(
         candidate_count=1,
-        max_output_tokens=1000,
-        temperature=1.0)
+        max_output_tokens=max_output_tokens,
+        temperature=temperature)
+
+generation_config = _create_generation_config()
 load_dotenv()
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 
@@ -37,14 +40,22 @@ genai.configure(api_key=GOOGLE_API_KEY)
 
 
 class Gemini():
+    # クラス定数
+    MAX_OUTPUT_TOKENS = 1000
+    TEMPERATURE = 1.0
+    MAX_HISTORY_LENGTH = 20
+
     def __init__(self):
         self.gemini_pro = genai.GenerativeModel("gemini-flash-latest")
         self.zunda_chat = self.gemini_pro.start_chat(history=[])
-        
+        self.generation_config = _create_generation_config(
+            max_output_tokens=self.MAX_OUTPUT_TOKENS,
+            temperature=self.TEMPERATURE
+        )
 
     def question(self, msg):
         try:
-            response = self.gemini_pro.generate_content(msg, safety_settings=safety_config, generation_config=generation_config)
+            response = self.gemini_pro.generate_content(msg, safety_settings=safety_config, generation_config=self.generation_config)
             return self._make_answer(msg, response.text)
         except Exception as e:
             error_message = f"ERROR in question(): {type(e).__name__}: {str(e)}"
@@ -53,8 +64,8 @@ class Gemini():
     
     def char_talk(self, msg):
         try:
-            response = self.zunda_chat.send_message(msg, safety_settings=safety_config, generation_config=generation_config)
-            if len(self.zunda_chat.history) > 20:
+            response = self.zunda_chat.send_message(msg, safety_settings=safety_config, generation_config=self.generation_config)
+            if len(self.zunda_chat.history) > self.MAX_HISTORY_LENGTH:
                 # 古い会話履歴を削除（システムプロンプトを保持して、その次の会話ペアを削除）
                 removed_messages = []
                 if len(self.zunda_chat.history) >= 4:
@@ -83,5 +94,5 @@ class Gemini():
         self.zunda_chat = self.gemini_pro.start_chat(history=[])
         self.zunda_chat.send_message("あなたは、今からずんだもんです。ずんだもんは語尾に「のだ」や「なのだ」がつきます。\
                                      これから、あなた(ずんだもん)はいろいろ会話をすることになりますが、会話の返答は全て300文字以内で答えてあげてください。短い分には問題ありません。"\
-                                     , safety_settings=safety_config, generation_config=generation_config)
+                                     , safety_settings=safety_config, generation_config=self.generation_config)
 
