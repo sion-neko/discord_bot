@@ -55,14 +55,18 @@ class Gemini():
         try:
             response = self.zunda_chat.send_message(msg, safety_settings=safety_config, generation_config=generation_config)
             if len(self.zunda_chat.history) > 20:
-                a = self.zunda_chat.history.pop(2)
-                b = self.zunda_chat.history.pop(2)
-                self.zunda_chat = self.gemini_pro.start_chat(history=self.zunda_chat.history)
-                print("下記の会話を削除-character。")
-                print("--------------")
-                print(f"{a.role}:{a.parts[0].text}")
-                print(f"{b.role}:{b.parts[0].text}")
-                print("--------------")
+                # 古い会話履歴を削除（システムプロンプトを保持して、その次の会話ペアを削除）
+                removed_messages = []
+                if len(self.zunda_chat.history) >= 4:
+                    # インデックス2と3（システムプロンプト後の最初の会話ペア）を削除
+                    removed_messages.append(self.zunda_chat.history.pop(2))
+                    removed_messages.append(self.zunda_chat.history.pop(2))
+                    self.zunda_chat = self.gemini_pro.start_chat(history=self.zunda_chat.history)
+                    print("下記の会話を削除-character。")
+                    print("--------------")
+                    for msg_item in removed_messages:
+                        print(f"{msg_item.role}:{msg_item.parts[0].text}")
+                    print("--------------")
             
             return self._make_answer(msg, response.text)
 
