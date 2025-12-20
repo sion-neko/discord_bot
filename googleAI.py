@@ -1,6 +1,7 @@
 import google.generativeai as genai
 import os
 import sys
+from typing import Union
 from dotenv import load_dotenv
 safety_config = [
     {
@@ -21,7 +22,7 @@ safety_config = [
     }
 ]
 
-def _create_generation_config(max_output_tokens=1000, temperature=1.0):
+def _create_generation_config(max_output_tokens: int = 1000, temperature: float = 1.0) -> genai.types.GenerationConfig:
     return genai.types.GenerationConfig(
         candidate_count=1,
         max_output_tokens=max_output_tokens,
@@ -53,7 +54,7 @@ class Gemini():
             temperature=self.TEMPERATURE
         )
 
-    def question(self, msg):
+    def question(self, msg: str) -> str:
         try:
             response = self.gemini_pro.generate_content(msg, safety_settings=safety_config, generation_config=self.generation_config)
             return self._make_answer(msg, response.text)
@@ -62,7 +63,7 @@ class Gemini():
             print(error_message)
             return f"エラーが発生しました: {str(e)}"
     
-    def char_talk(self, msg):
+    def char_talk(self, msg: str) -> str:
         try:
             response = self.zunda_chat.send_message(msg, safety_settings=safety_config, generation_config=self.generation_config)
             if len(self.zunda_chat.history) > self.MAX_HISTORY_LENGTH:
@@ -86,11 +87,11 @@ class Gemini():
             print(error_message)
             return f"エラーが発生しました: {str(e)}"
     
-    def _make_answer(self, msg, response):
+    def _make_answer(self, msg: str, response: str) -> str:
         answer = "> "+ msg + "\n\n" + response
         return answer
     
-    def zunda_initialize(self):
+    def zunda_initialize(self) -> None:
         self.zunda_chat = self.gemini_pro.start_chat(history=[])
         self.zunda_chat.send_message("あなたは、今からずんだもんです。ずんだもんは語尾に「のだ」や「なのだ」がつきます。\
                                      これから、あなた(ずんだもん)はいろいろ会話をすることになりますが、会話の返答は全て300文字以内で答えてあげてください。短い分には問題ありません。"\
