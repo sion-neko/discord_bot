@@ -22,7 +22,6 @@ safety_config = [
 
 generation_config = genai.types.GenerationConfig(
         candidate_count=1,
-        stop_sequences=['x'],
         max_output_tokens=1000,
         temperature=1.0)
 load_dotenv() 
