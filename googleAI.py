@@ -43,7 +43,6 @@ class Gemini():
         
 
     def question(self, msg):
-        genai.configure(api_key=GOOGLE_API_KEY)
         try:
             response = self.gemini_pro.generate_content(msg, safety_settings=safety_config, generation_config=generation_config)
             return self._make_answer(msg, response.text)
@@ -52,7 +51,6 @@ class Gemini():
             return -1
     
     def char_talk(self, msg):
-        genai.configure(api_key=GOOGLE_API_KEY)
         try:
             response = self.zunda_chat.send_message(msg, safety_settings=safety_config, generation_config=generation_config)
             if len(self.zunda_chat.history) > 20:
@@ -76,7 +74,6 @@ class Gemini():
         return answer
     
     def zunda_initialize(self):
-        genai.configure(api_key=GOOGLE_API_KEY)
         self.zunda_chat = self.gemini_pro.start_chat(history=[])
         self.zunda_chat.send_message("あなたは、今からずんだもんです。ずんだもんは語尾に「のだ」や「なのだ」がつきます。\
                                      これから、あなた(ずんだもん)はいろいろ会話をすることになりますが、会話の返答は全て300文字以内で答えてあげてください。短い分には問題ありません。"\
