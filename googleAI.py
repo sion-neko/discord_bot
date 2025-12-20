@@ -47,8 +47,9 @@ class Gemini():
             response = self.gemini_pro.generate_content(msg, safety_settings=safety_config, generation_config=generation_config)
             return self._make_answer(msg, response.text)
         except Exception as e:
-            print(e)
-            return -1
+            error_message = f"ERROR in question(): {type(e).__name__}: {str(e)}"
+            print(error_message)
+            return f"エラーが発生しました: {str(e)}"
     
     def char_talk(self, msg):
         try:
@@ -64,10 +65,11 @@ class Gemini():
                 print("--------------")
             
             return self._make_answer(msg, response.text)
-    
+
         except Exception as e:
-            print(e)
-            return -1
+            error_message = f"ERROR in char_talk(): {type(e).__name__}: {str(e)}"
+            print(error_message)
+            return f"エラーが発生しました: {str(e)}"
     
     def _make_answer(self, msg, response):
         answer = "> "+ msg + "\n\n" + response
