@@ -1,5 +1,6 @@
 import google.generativeai as genai
 import os
+import sys
 from dotenv import load_dotenv
 safety_config = [
     {
@@ -24,14 +25,20 @@ generation_config = genai.types.GenerationConfig(
         candidate_count=1,
         max_output_tokens=1000,
         temperature=1.0)
-load_dotenv() 
+load_dotenv()
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+
+# GOOGLE_API_KEYの確認
+if not GOOGLE_API_KEY:
+    print("ERROR: GOOGLE_API_KEYが設定されていません。.envファイルを確認してください。")
+    sys.exit(1)
+
 genai.configure(api_key=GOOGLE_API_KEY)
 
 
 class Gemini():
     def __init__(self):
-        self.gemini_pro = genai.GenerativeModel("gemini-1.5-flash")
+        self.gemini_pro = genai.GenerativeModel("gemini-flash-latest")
         self.zunda_chat = self.gemini_pro.start_chat(history=[])
         
 
@@ -51,7 +58,7 @@ class Gemini():
             if len(self.zunda_chat.history) > 20:
                 a = self.zunda_chat.history.pop(2)
                 b = self.zunda_chat.history.pop(2)
-                self.gemini_pro.start_chat(history=self.zunda_chat.history)
+                self.zunda_chat = self.gemini_pro.start_chat(history=self.zunda_chat.history)
                 print("下記の会話を削除-character。")
                 print("--------------")
                 print(f"{a.role}:{a.parts[0].text}")

@@ -69,7 +69,19 @@ async def dog(interaction):
 
 # Web サーバの立ち上げ
 keep_alive()
+
+# BOT_TOKENの確認
+bot_token = os.getenv('BOT_TOKEN')
+if not bot_token:
+    print("ERROR: BOT_TOKENが設定されていません。.envファイルを確認してください。")
+    sys.exit(1)
+
 try:
-  bot.run(os.getenv('BOT_TOKEN'))
-except:
-  os.system("kill")
+    bot.run(bot_token)
+except discord.LoginFailure:
+    print("ERROR: BOT_TOKENが無効です。正しいトークンを.envファイルに設定してください。")
+    sys.exit(1)
+except Exception as e:
+    print(f"ERROR: 予期しないエラーが発生しました: {e}")
+    traceback.print_exc()
+    sys.exit(1)

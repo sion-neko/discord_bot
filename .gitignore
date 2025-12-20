@@ -1,3 +1,5 @@
 .env
 __pycache__
 memo.txt
+venv
+.claude
