@@ -2,7 +2,7 @@ import os
 import discord
 from discord.ext.commands import Bot
 import api
-from ai.manager import AIManager
+from ai import AIManager
 import traceback
 import random
 from keep_alive import keep_alive

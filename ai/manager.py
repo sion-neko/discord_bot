@@ -1,6 +1,5 @@
 import os
-from ai.clients.groq import GroqClient
-from ai.clients.gemini import GeminiClient
+from ai.clients import GroqClient, GeminiClient
 
 
 class AIManager:
