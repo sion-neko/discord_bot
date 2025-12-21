@@ -2,16 +2,14 @@ import os
 import discord
 from discord.ext.commands import Bot
 import api
-import googleAI
+from ai.manager import AIManager
 import traceback
-from dotenv import load_dotenv
 import random
 from keep_alive import keep_alive
 import sys
 
-load_dotenv() 
 API = api.API()
-gem = googleAI.Gemini()
+ai_mgr = AIManager()
 bot = Bot(command_prefix='$', intents=discord.Intents.all())
 ERROR = -1
 ERROR_EMBED = discord.Embed(title="Error!",color=0xff0000, description="エラーが発生しました。管理者に連絡してください。\n")
@@ -22,7 +20,6 @@ async def on_ready():
     for server in bot.guilds:
         await bot.tree.sync(guild=discord.Object(id=server.id))
 
-    gem.zunda_initialize()
     await bot.tree.sync()
     print("python-version："+sys.version)
     print(f"{bot.user}:起動完了")
@@ -36,13 +33,13 @@ async def on_command_error(ctx, error):
     await ctx.send(embed=ERROR_EMBED)
 
 
-@bot.tree.command(name="talk", description="ずんだもんとおしゃべり")
+@bot.tree.command(name="talk", description="AIアシスタントとおしゃべり")
 async def talk(interaction: discord.Interaction, message: str):
     await interaction.response.defer(thinking=True)
-    response = gem.char_talk(message)
-    if response == ERROR:
-        message = "> " + message
-        await interaction.followup.send(message, embed=ERROR_EMBED)
+    response = ai_mgr.send_message(message)
+    if response == ERROR or "エラーが発生しました" in response:
+        message_quoted = "> " + message
+        await interaction.followup.send(message_quoted, embed=ERROR_EMBED)
     else:
         await interaction.followup.send(response)
 
