@@ -5,20 +5,17 @@ from ai.base_client import BaseAIClient
 
 # Web検索ツールの定義
 WEB_SEARCH_TOOL = {
-    "type": "function",
-    "function": {
-        "name": "web_search",
-        "description": "最新の情報、ニュース、事実、データを検索します。ユーザーが最近の出来事や現在のデータ、具体的な事実情報を求めている場合に使用してください。",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "query": {
-                    "type": "string",
-                    "description": "検索クエリ(最適化された検索キーワード)"
-                }
-            },
-            "required": ["query"]
-        }
+    "name": "web_search",
+    "description": "最新の情報、ニュース、事実、データを検索します。ユーザーが最近の出来事や現在のデータ、具体的な事実情報を求めている場合に使用してください。",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "query": {
+                "type": "string",
+                "description": "検索クエリ(最適化された検索キーワード)"
+            }
+        },
+        "required": ["query"]
     }
 }
 
@@ -62,24 +59,23 @@ class GroqClient(BaseAIClient):
                 messages=self.chat_history,
                 temperature=self.TEMPERATURE,
                 max_tokens=self.MAX_TOKENS,
-                tools=[WEB_SEARCH_TOOL],  # ツールを追加
-                tool_choice="auto"         # AIが自動判断
+                functions=[WEB_SEARCH_TOOL],  # functionsパラメータを使用
+                function_call="auto"           # AIが自動判断
             )
 
-            # Tool callがあるかチェック
-            if response.choices[0].message.tool_calls:
-                tool_call = response.choices[0].message.tool_calls[0]
+            # Function callがあるかチェック
+            if response.choices[0].message.function_call:
+                function_call = response.choices[0].message.function_call
 
-                if tool_call.function.name == "web_search":
-                    args = json.loads(tool_call.function.arguments)
+                if function_call.name == "web_search":
+                    args = json.loads(function_call.arguments)
 
                     print(f"[GroqClient] Web検索要求: {args['query']}")
 
-                    # Tool call情報を返す
+                    # Function call情報を返す
                     return {
                         "tool": "web_search",
                         "query": args["query"],
-                        "tool_call_id": tool_call.id,
                         "user_message": message  # 元のメッセージも保存
                     }
 
