@@ -1,5 +1,5 @@
 import os
-from groq import Groq
+from openai import OpenAI
 from ai.base_client import BaseAIClient
 
 class GroqClient(BaseAIClient):
@@ -16,7 +16,11 @@ class GroqClient(BaseAIClient):
         if not api_key:
             raise ValueError("GROQ_API_KEY が環境変数に設定されていません")
 
-        self.client = Groq(api_key=api_key)
+        # OpenAI SDKでGroq APIに接続
+        self.client = OpenAI(
+            api_key=api_key,
+            base_url="https://api.groq.com/openai/v1"
+        )
         self.chat_history = []  # フォーマット: [{"role": "user/assistant", "content": "..."}]
 
     def send_message(self, message: str) -> str:
