@@ -7,11 +7,11 @@ class GoogleSearchClient:
     """Google Custom Search APIクライアント"""
 
     def __init__(self):
-        self.api_key = os.getenv('GOOGLE_SEARCH_API_KEY')
+        self.api_key = os.getenv('GOOGLE_API_KEY')
         self.search_engine_id = os.getenv('SEARCH_ENGINE_ID')
 
         if not self.api_key:
-            raise ValueError("GOOGLE_SEARCH_API_KEY が環境変数に設定されていません")
+            raise ValueError("GOOGLE_API_KEY が環境変数に設定されていません")
         if not self.search_engine_id:
             raise ValueError("SEARCH_ENGINE_ID が環境変数に設定されていません")
 

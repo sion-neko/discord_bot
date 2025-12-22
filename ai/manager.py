@@ -48,7 +48,7 @@ class AIManager:
             print("[AIManager] PERPLEXITY_API_KEY が未設定のため、Web検索は無効です")
 
         # Google Search初期化 (Web検索用・オプション)
-        if os.getenv('GOOGLE_SEARCH_API_KEY') and os.getenv('SEARCH_ENGINE_ID'):
+        if os.getenv('GOOGLE_API_KEY') and os.getenv('SEARCH_ENGINE_ID'):
             try:
                 self.google_search_client = GoogleSearchClient()
                 print("[AIManager] Google Search client を初期化しました")
@@ -56,7 +56,7 @@ class AIManager:
                 print(f"[AIManager] Google Search初期化失敗: {e}")
                 self.google_search_client = None
         else:
-            print("[AIManager] GOOGLE_SEARCH_API_KEY/SEARCH_ENGINE_ID が未設定のため、Google検索は無効です")
+            print("[AIManager] GOOGLE_API_KEY/SEARCH_ENGINE_ID が未設定のため、Google検索は無効です")
 
         # 少なくとも1つのクライアントが必要
         if not self.groq_client and not self.gemini_client:
@@ -125,7 +125,7 @@ class AIManager:
         if not self.google_search_client:
             return {
                 "type": "error",
-                "message": "Web検索機能は現在利用できません。GOOGLE_SEARCH_API_KEY/SEARCH_ENGINE_IDが設定されていません。"
+                "message": "Web検索機能は現在利用できません。GOOGLE_API_KEY/SEARCH_ENGINE_IDが設定されていません。"
             }
 
         try:
