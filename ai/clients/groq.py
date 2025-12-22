@@ -82,6 +82,11 @@ class GroqClient(BaseAIClient):
             # 通常の応答
             assistant_message = response.choices[0].message.content
 
+            # contentがNoneの場合のハンドリング
+            if assistant_message is None:
+                print(f"[GroqClient] 警告: contentがNoneです。空文字列として処理します。")
+                assistant_message = "応答を生成できませんでした。"
+
             # アシスタント応答を履歴に追加
             assistant_msg = {"role": "assistant", "content": assistant_message}
             self.chat_history.append(assistant_msg)
