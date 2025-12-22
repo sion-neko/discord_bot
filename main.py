@@ -15,6 +15,54 @@ ERROR = -1
 ERROR_EMBED = discord.Embed(title="Error!",color=0xff0000, description="エラーが発生しました。管理者に連絡してください。\n")
 
 
+def create_search_embed(result: dict) -> discord.Embed:
+    """
+    Perplexity検索結果をDiscord Embedに変換
+
+    Args:
+        result: {
+            "summary": "要約テキスト",
+            "citations": ["url1", "url2", ...],
+            "query": "検索クエリ"
+        }
+    """
+    # 要約が長すぎる場合は切り詰め
+    summary = result["summary"]
+    if len(summary) > 2000:
+        summary = summary[:1997] + "..."
+
+    embed = discord.Embed(
+        title="🔍 Web検索結果",
+        description=summary,
+        color=0x00a67e  # Perplexityカラー
+    )
+
+    # 検索クエリを追加
+    embed.add_field(
+        name="検索クエリ",
+        value=f"`{result['query']}`",
+        inline=False
+    )
+
+    # 参照元URLを追加
+    if result.get("citations"):
+        citations_list = result["citations"][:5]  # 最大5件
+        if citations_list:
+            citations_text = "\n".join([
+                f"{i+1}. [{url}]({url})"
+                for i, url in enumerate(citations_list)
+            ])
+            embed.add_field(
+                name="📚 参照元",
+                value=citations_text,
+                inline=False
+            )
+
+    embed.set_footer(text="Powered by Perplexity Sonar API")
+
+    return embed
+
+
 @bot.event
 async def on_ready():
     for server in bot.guilds:
@@ -36,7 +84,28 @@ async def on_command_error(ctx, error):
 @bot.tree.command(name="talk", description="AIアシスタントとおしゃべり")
 async def talk(interaction: discord.Interaction, message: str):
     await interaction.response.defer(thinking=True)
+
     response = ai_mgr.send_message(message)
+
+    # 検索結果の場合
+    if isinstance(response, dict):
+        if response.get("type") == "search_result":
+            # Embed形式で表示
+            embed = create_search_embed(response)
+            await interaction.followup.send(embed=embed)
+            return
+
+        elif response.get("type") == "error":
+            # エラーEmbed
+            error_embed = discord.Embed(
+                title="検索エラー",
+                description=response["message"],
+                color=0xff0000
+            )
+            await interaction.followup.send(embed=error_embed)
+            return
+
+    # 通常の会話応答
     if response == ERROR or "エラーが発生しました" in response:
         message_quoted = "> " + message
         await interaction.followup.send(message_quoted, embed=ERROR_EMBED)
