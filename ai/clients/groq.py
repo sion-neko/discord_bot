@@ -1,6 +1,26 @@
 import os
+import json
 from openai import OpenAI
 from ai.base_client import BaseAIClient
+
+# Web検索ツールの定義
+WEB_SEARCH_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "web_search",
+        "description": "最新の情報、ニュース、事実、データを検索します。ユーザーが最近の出来事や現在のデータ、具体的な事実情報を求めている場合に使用してください。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "検索クエリ(最適化された検索キーワード)"
+                }
+            },
+            "required": ["query"]
+        }
+    }
+}
 
 class GroqClient(BaseAIClient):
     """Groq API Client (llama-3.3-70b-versatile モデル使用)"""
@@ -23,22 +43,47 @@ class GroqClient(BaseAIClient):
         )
         self.chat_history = []  # フォーマット: [{"role": "user/assistant", "content": "..."}]
 
-    def send_message(self, message: str) -> str:
-        """Groq APIにメッセージを送信して応答を取得"""
+    def send_message(self, message: str) -> str | dict:
+        """
+        Groq APIにメッセージを送信
+
+        Returns:
+            str: 通常の会話応答
+            dict: Tool call要求 {"tool": "web_search", "query": "...", "tool_call_id": "..."}
+        """
         try:
             # ユーザーメッセージを履歴に追加
             user_msg = {"role": "user", "content": message}
             self.chat_history.append(user_msg)
 
-            # Groq APIを呼び出し
+            # Groq APIを呼び出し (Function Calling有効)
             response = self.client.chat.completions.create(
                 model=self.MODEL_NAME,
                 messages=self.chat_history,
                 temperature=self.TEMPERATURE,
-                max_tokens=self.MAX_TOKENS
+                max_tokens=self.MAX_TOKENS,
+                tools=[WEB_SEARCH_TOOL],  # ツールを追加
+                tool_choice="auto"         # AIが自動判断
             )
 
-            # 応答テキストを抽出
+            # Tool callがあるかチェック
+            if response.choices[0].message.tool_calls:
+                tool_call = response.choices[0].message.tool_calls[0]
+
+                if tool_call.function.name == "web_search":
+                    args = json.loads(tool_call.function.arguments)
+
+                    print(f"[GroqClient] Web検索要求: {args['query']}")
+
+                    # Tool call情報を返す
+                    return {
+                        "tool": "web_search",
+                        "query": args["query"],
+                        "tool_call_id": tool_call.id,
+                        "user_message": message  # 元のメッセージも保存
+                    }
+
+            # 通常の応答
             assistant_message = response.choices[0].message.content
 
             # アシスタント応答を履歴に追加
