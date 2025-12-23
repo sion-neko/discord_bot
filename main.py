@@ -112,6 +112,44 @@ async def talk(interaction: discord.Interaction, message: str):
     else:
         await interaction.followup.send(response)
 
+@bot.tree.command(name="search", description="Webを検索して要約")
+async def search(interaction: discord.Interaction, query: str):
+    """Perplexity APIで直接Web検索"""
+    await interaction.response.defer(thinking=True)
+
+    # Perplexityが利用可能かチェック
+    if not ai_mgr.perplexity_client:
+        error_embed = discord.Embed(
+            title="検索エラー",
+            description="Web検索機能が利用できません。PERPLEXITY_API_KEYが設定されていません。",
+            color=0xff0000
+        )
+        await interaction.followup.send(embed=error_embed)
+        return
+
+    try:
+        # Perplexityで直接検索
+        print(f"[/search] Perplexity検索実行: {query}")
+        result = ai_mgr.perplexity_client.search(query)
+
+        # 検索結果をEmbedで表示
+        search_result = {
+            "summary": result["content"],
+            "citations": result["citations"],
+            "query": query
+        }
+        embed = create_search_embed(search_result)
+        await interaction.followup.send(embed=embed)
+
+    except Exception as e:
+        print(f"[/search] 検索失敗: {e}")
+        error_embed = discord.Embed(
+            title="検索エラー",
+            description=f"検索中にエラーが発生しました: {str(e)}",
+            color=0xff0000
+        )
+        await interaction.followup.send(embed=error_embed)
+
 @bot.tree.command(name="r", description="数字をランダム出力")
 async def r(interaction: discord.Interaction, num: int):
     result = random.randint(1, int(num))

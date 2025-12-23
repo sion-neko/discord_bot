@@ -51,8 +51,22 @@ class PerplexityClient:
 
             # PerplexityのレスポンスからcitationsURLを抽出
             citations = []
-            if hasattr(response, 'citations'):
+
+            # 方法1: レスポンスオブジェクトのcitations属性
+            if hasattr(response, 'citations') and response.citations:
                 citations = response.citations
+
+            # 方法2: メッセージレベルのcitations
+            elif hasattr(response.choices[0].message, 'citations'):
+                citations = response.choices[0].message.citations
+
+            # 方法3: model_extra(拡張フィールド)からcitations取得
+            elif hasattr(response, 'model_extra') and response.model_extra:
+                citations = response.model_extra.get('citations', [])
+
+            # デバッグ: レスポンス構造をログ出力
+            print(f"[PerplexityClient] レスポンス属性: {dir(response)}")
+            print(f"[PerplexityClient] Citations取得: {len(citations)}件")
 
             return {
                 "content": content,
