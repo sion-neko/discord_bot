@@ -9,8 +9,8 @@ class BaseAIClient(ABC):
 
     # 共通システムプロンプト
     SYSTEM_PROMPT = (
-        "あなたは簡潔な回答を提供するアシスタントです。"
-        "Web検索を実行した場合は、検索結果を1-2文で要約し、要点のみを述べてください。\n\n"
+        "あなたは簡潔な回答を提供するアシスタントです。ユーザーからのメッセージを理解し、簡潔に回答してください。"
+        "特に、Web検索を実行した場合は、検索結果を1-2文で要約し、要点のみを述べてください。\n\n"
         "重要: 表を出力する場合、Markdown形式(|で区切る形式)ではなく、"
         "見やすいアスキーアート的な形式で出力してください。例:\n"
         "良い例:\n"
@@ -44,7 +44,16 @@ class BaseAIClient(ABC):
 
     def _make_answer(self, user_msg: str, response: str) -> str:
         """Discord用に応答をフォーマット (ユーザーメッセージを引用)"""
-        return f"> {user_msg}\n\n{response}"
+        formatted = f"> {user_msg}\n\n{response}"
+
+        # Discordの2000文字制限に対応
+        if len(formatted) > 2000:
+            # 応答部分を切り詰める (引用部分 + 改行2文字 + "..." 3文字 = マージン)
+            max_response_len = 2000 - len(f"> {user_msg}\n\n") - 3
+            truncated_response = response[:max_response_len] + "..."
+            formatted = f"> {user_msg}\n\n{truncated_response}"
+
+        return formatted
 
     def prune_history(self) -> None:
         """履歴が上限を超えたら最古のメッセージを削除"""
