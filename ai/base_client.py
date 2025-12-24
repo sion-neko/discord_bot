@@ -7,8 +7,23 @@ class BaseAIClient(ABC):
 
     MAX_HISTORY_LENGTH = 20  # クラス定数: 会話履歴の最大長
 
-    def __init__(self):
-        self.chat_history: List[Dict] = []
+    # 共通システムプロンプト
+    SYSTEM_PROMPT = (
+        "あなたは簡潔な回答を提供するアシスタントです。ユーザーからのメッセージを理解し、簡潔に回答してください。"
+        "特に、Web検索を実行した場合は、検索結果を1-2文で要約し、要点のみを述べてください。\n\n"
+        "重要: 表を出力する場合、Markdown形式(|で区切る形式)ではなく、"
+        "見やすいアスキーアート的な形式で出力してください。例:\n"
+        "良い例:\n"
+        "┌────────┬────────┐\n"
+        "│ 項目   │ 値     │\n"
+        "├────────┼────────┤\n"
+        "│ 名前   │ 太郎   │\n"
+        "└────────┴────────┘\n\n"
+        "悪い例:\n"
+        "| 項目 | 値 |\n"
+        "|------|----|\n"
+        "| 名前 | 太郎 |"
+    )
 
     @abstractmethod
     def send_message(self, message: str) -> str:
@@ -26,13 +41,20 @@ class BaseAIClient(ABC):
         """
         pass
 
-    def get_history_length(self) -> int:
-        """現在の会話履歴の長さを返す"""
-        return len(self.chat_history)
-
     def _make_answer(self, user_msg: str, response: str) -> str:
         """Discord用に応答をフォーマット (ユーザーメッセージを引用)"""
-        return f"> {user_msg}\n\n{response}"
+        # モデル名を斜体で追加 (Discordマークダウン: *text*)
+        model_signature = f"\n\n✨  *{self.MODEL_NAME}*"
+        formatted = f"> {user_msg}\n\n{response}{model_signature}"
+
+        # Discordの2000文字制限に対応
+        if len(formatted) > 2000:
+            # 応答部分を切り詰める (引用部分 + モデル名 + マージン)
+            max_response_len = 2000 - len(f"> {user_msg}\n\n") - len(model_signature) - 3
+            truncated_response = response[:max_response_len] + "..."
+            formatted = f"> {user_msg}\n\n{truncated_response}{model_signature}"
+
+        return formatted
 
     def prune_history(self) -> None:
         """履歴が上限を超えたら最古のメッセージを削除"""
