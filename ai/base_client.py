@@ -41,17 +41,18 @@ class BaseAIClient(ABC):
         """
         pass
 
-
     def _make_answer(self, user_msg: str, response: str) -> str:
         """Discord用に応答をフォーマット (ユーザーメッセージを引用)"""
-        formatted = f"> {user_msg}\n\n{response}"
+        # モデル名を斜体で追加 (Discordマークダウン: *text*)
+        model_signature = f"\n\n✨  *{self.MODEL_NAME}*"
+        formatted = f"> {user_msg}\n\n{response}{model_signature}"
 
         # Discordの2000文字制限に対応
         if len(formatted) > 2000:
-            # 応答部分を切り詰める (引用部分 + 改行2文字 + "..." 3文字 = マージン)
-            max_response_len = 2000 - len(f"> {user_msg}\n\n") - 3
+            # 応答部分を切り詰める (引用部分 + モデル名 + マージン)
+            max_response_len = 2000 - len(f"> {user_msg}\n\n") - len(model_signature) - 3
             truncated_response = response[:max_response_len] + "..."
-            formatted = f"> {user_msg}\n\n{truncated_response}"
+            formatted = f"> {user_msg}\n\n{truncated_response}{model_signature}"
 
         return formatted
 
