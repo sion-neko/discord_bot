@@ -7,8 +7,23 @@ class BaseAIClient(ABC):
 
     MAX_HISTORY_LENGTH = 20  # クラス定数: 会話履歴の最大長
 
-    def __init__(self):
-        self.chat_history: List[Dict] = []
+    # 共通システムプロンプト
+    SYSTEM_PROMPT = (
+        "あなたは簡潔な回答を提供するアシスタントです。"
+        "Web検索を実行した場合は、検索結果を1-2文で要約し、要点のみを述べてください。\n\n"
+        "重要: 表を出力する場合、Markdown形式(|で区切る形式)ではなく、"
+        "見やすいアスキーアート的な形式で出力してください。例:\n"
+        "良い例:\n"
+        "┌────────┬────────┐\n"
+        "│ 項目   │ 値     │\n"
+        "├────────┼────────┤\n"
+        "│ 名前   │ 太郎   │\n"
+        "└────────┴────────┘\n\n"
+        "悪い例:\n"
+        "| 項目 | 値 |\n"
+        "|------|----|\n"
+        "| 名前 | 太郎 |"
+    )
 
     @abstractmethod
     def send_message(self, message: str) -> str:
@@ -26,9 +41,6 @@ class BaseAIClient(ABC):
         """
         pass
 
-    def get_history_length(self) -> int:
-        """現在の会話履歴の長さを返す"""
-        return len(self.chat_history)
 
     def _make_answer(self, user_msg: str, response: str) -> str:
         """Discord用に応答をフォーマット (ユーザーメッセージを引用)"""
