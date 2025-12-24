@@ -15,54 +15,6 @@ ERROR = -1
 ERROR_EMBED = discord.Embed(title="Error!",color=0xff0000, description="エラーが発生しました。管理者に連絡してください。\n")
 
 
-def create_search_embed(result: dict) -> discord.Embed:
-    """
-    Perplexity検索結果をDiscord Embedに変換
-
-    Args:
-        result: {
-            "summary": "要約テキスト",
-            "citations": ["url1", "url2", ...],
-            "query": "検索クエリ"
-        }
-    """
-    # 要約が長すぎる場合は切り詰め
-    summary = result["summary"]
-    if len(summary) > 2000:
-        summary = summary[:1997] + "..."
-
-    embed = discord.Embed(
-        title="🔍 Web検索結果",
-        description=summary,
-        color=0x00a67e  # Perplexityカラー
-    )
-
-    # 検索クエリを追加
-    embed.add_field(
-        name="検索クエリ",
-        value=f"`{result['query']}`",
-        inline=False
-    )
-
-    # 参照元URLを追加
-    if result.get("citations"):
-        citations_list = result["citations"][:5]  # 最大5件
-        if citations_list:
-            citations_text = "\n".join([
-                f"{i+1}. [{url}]({url})"
-                for i, url in enumerate(citations_list)
-            ])
-            embed.add_field(
-                name="📚 参照元",
-                value=citations_text,
-                inline=False
-            )
-
-    embed.set_footer(text="Powered by Perplexity Sonar API")
-
-    return embed
-
-
 @bot.event
 async def on_ready():
     for server in bot.guilds:
@@ -121,7 +73,7 @@ async def search(interaction: discord.Interaction, query: str):
     if not ai_mgr.perplexity_client:
         error_embed = discord.Embed(
             title="検索エラー",
-            description="Web検索機能が利用できません。PERPLEXITY_API_KEYが設定されていません。",
+            description="Web検索機能が利用できません。",
             color=0xff0000
         )
         await interaction.followup.send(embed=error_embed)
@@ -133,13 +85,7 @@ async def search(interaction: discord.Interaction, query: str):
         result = ai_mgr.perplexity_client.search(query)
 
         # 検索結果をEmbedで表示
-        search_result = {
-            "summary": result["content"],
-            "citations": result["citations"],
-            "query": query
-        }
-        embed = create_search_embed(search_result)
-        await interaction.followup.send(embed=embed)
+        await interaction.followup.send(result["content"])
 
     except Exception as e:
         print(f"[/search] 検索失敗: {e}")
