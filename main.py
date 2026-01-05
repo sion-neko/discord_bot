@@ -34,6 +34,11 @@ async def on_command_error(ctx, error):
 
 @bot.tree.command(name="talk", description="AIアシスタントとおしゃべり")
 async def talk(interaction: discord.Interaction, message: str):
+    # DMからのコマンドは拒否
+    if isinstance(interaction.channel, discord.DMChannel):
+        await interaction.response.send_message("このコマンドはサーバーでのみ使用できます。", ephemeral=True)
+        return
+
     await interaction.response.defer(thinking=True)
 
     try:
@@ -70,6 +75,11 @@ async def on_message(message):
 @bot.tree.command(name="search", description="Webを検索して要約")
 async def search(interaction: discord.Interaction, query: str):
     """Perplexity APIで直接Web検索"""
+    # DMからのコマンドは拒否
+    if isinstance(interaction.channel, discord.DMChannel):
+        await interaction.response.send_message("このコマンドはサーバーでのみ使用できます。", ephemeral=True)
+        return
+
     await interaction.response.defer(thinking=True)
 
     # Perplexityが利用可能かチェック
