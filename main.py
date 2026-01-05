@@ -41,12 +41,13 @@ async def talk(interaction: discord.Interaction, message: str):
         return
 
     await interaction.response.defer(thinking=True)
-
+    message_quoted = "> " + message
     try:
         response = ai_mgr.send_message(message)
-        await interaction.followup.send(response)
+        # /talkコマンドでは引用を付ける
+        final_response = f"{message_quoted}\n\n{response}"
+        await interaction.followup.send(final_response)
     except AIError as e:
-        message_quoted = "> " + message
         await interaction.followup.send(message_quoted, embed=ERROR_EMBED)
 
 @bot.event
