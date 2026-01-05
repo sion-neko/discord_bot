@@ -1,5 +1,6 @@
 import os
 from ai.clients import GroqClient, GeminiClient, PerplexityClient
+from ai.exceptions import AIError
 
 
 class AIManager:
@@ -49,23 +50,20 @@ class AIManager:
         if not self.groq_client and not self.gemini_client:
             raise ValueError("利用可能なAI Clientがありません。APIキーを確認してください")
 
-    def send_message(self, message: str) -> str | dict:
+    def send_message(self, message: str) -> str:
         """
         メッセージを送信 (自動フォールバック付き)
 
         Returns:
             str: 通常の会話応答
-            dict: 検索結果 {"type": "search_result", "summary": "...", "citations": [...], "query": "..."}
-                  またはエラー {"type": "error", "message": "..."}
-        """
-        response = None
 
+        Raises:
+            AIError: 全てのAI Clientが失敗した場合
+        """
         # Groqを優先して試行 (利用可能な場合)
         if self.groq_client is not None:
             try:
                 response = self.groq_client.send_message(message)
-                # Groq Compoundは自動的に検索を実行するため、
-                # 特別な処理は不要。そのまま返す
                 print(f"[AIManager] ✓ Groq API を使用しました")
                 return response
 
@@ -73,21 +71,18 @@ class AIManager:
                 print(f"[AIManager] Groq失敗 ({type(e).__name__}): {str(e)}")
                 print(f"[AIManager] → Geminiへフォールバック中...")
 
-        # Geminiへフォールバック (またはGroq無効時はGeminiを直接使用)
-        if self.gemini_client and response is None:
-            try:
-                response = self.gemini_client.send_message(message)
+        # Geminiへフォールバック (初期化時に存在保証済み)
+        try:
+            response = self.gemini_client.send_message(message)
 
-                if self.groq_client is None:
-                    print(f"[AIManager] ✓ Gemini API を使用しました (Groq無効)")
-                else:
-                    print(f"[AIManager] ✓ Gemini API を使用しました (フォールバック)")
+            if self.groq_client is None:
+                print(f"[AIManager] ✓ Gemini API を使用しました (Groq無効)")
+            else:
+                print(f"[AIManager] ✓ Gemini API を使用しました (フォールバック)")
 
-                return response
+            return response
 
-            except Exception as e:
-                error_msg = f"[AIManager] 両方のAPIが失敗しました! Geminiエラー: {type(e).__name__}: {str(e)}"
-                print(error_msg)
-                return f"エラーが発生しました。両方のAPIが利用できません。\n技術詳細: {str(e)}"
-
-        return response or "エラーが発生しました。"
+        except Exception as e:
+            error_msg = f"両方のAPIが失敗しました。Geminiエラー: {type(e).__name__}: {str(e)}"
+            print(f"[AIManager] {error_msg}")
+            raise AIError(error_msg) from e
