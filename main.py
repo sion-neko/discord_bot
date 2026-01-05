@@ -12,6 +12,7 @@ API = api.API()
 ai_mgr = AIManager()
 bot = Bot(command_prefix='$', intents=discord.Intents.all())
 ERROR_EMBED = discord.Embed(title="Error!",color=0xff0000, description="エラーが発生しました。管理者に連絡してください。\n")
+DM_REJECTED_MESSAGE = "このBotとの会話はサーバーでのみ使用できます。"
 
 
 @bot.event
@@ -36,7 +37,7 @@ async def on_command_error(ctx, error):
 async def talk(interaction: discord.Interaction, message: str):
     # DMからのコマンドは拒否
     if isinstance(interaction.channel, discord.DMChannel):
-        await interaction.response.send_message("このコマンドはサーバーでのみ使用できます。", ephemeral=True)
+        await interaction.response.send_message(DM_REJECTED_MESSAGE, ephemeral=True)
         return
 
     await interaction.response.defer(thinking=True)
@@ -56,14 +57,20 @@ async def on_message(message):
 
     # Botへのメンションをチェック
     if bot.user in message.mentions:
+        # メンション文字列を除去
         content = message.content.replace(f'<@{bot.user.id}>', '').replace(f'<@!{bot.user.id}>', '').strip()
 
-        # 引数が空の場合は定型文を返す
+        # 空メッセージの場合は定型文を返す
         if not content:
             await message.channel.send("何かご用ですか？")
             return
 
-        # タイピングインジケータを表示
+        # DMからは拒否
+        if isinstance(message.channel, discord.DMChannel):
+            await message.channel.send(DM_REJECTED_MESSAGE)
+            return
+
+        # タイピングインジケータを表示しながらAI応答取得と送信
         async with message.channel.typing():
             try:
                 response = ai_mgr.send_message(content)
@@ -77,7 +84,7 @@ async def search(interaction: discord.Interaction, query: str):
     """Perplexity APIで直接Web検索"""
     # DMからのコマンドは拒否
     if isinstance(interaction.channel, discord.DMChannel):
-        await interaction.response.send_message("このコマンドはサーバーでのみ使用できます。", ephemeral=True)
+        await interaction.response.send_message(DM_REJECTED_MESSAGE, ephemeral=True)
         return
 
     await interaction.response.defer(thinking=True)
