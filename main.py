@@ -2,7 +2,7 @@ import os
 import discord
 from discord.ext.commands import Bot
 import api
-from ai import AIManager
+from ai import AIManager, AIError
 import traceback
 import random
 from keep_alive import keep_alive
@@ -11,7 +11,6 @@ import sys
 API = api.API()
 ai_mgr = AIManager()
 bot = Bot(command_prefix='$', intents=discord.Intents.all())
-ERROR = -1
 ERROR_EMBED = discord.Embed(title="Error!",color=0xff0000, description="エラーが発生しました。管理者に連絡してください。\n")
 
 
@@ -37,13 +36,12 @@ async def on_command_error(ctx, error):
 async def talk(interaction: discord.Interaction, message: str):
     await interaction.response.defer(thinking=True)
 
-    response = ai_mgr.send_message(message)
-
-    if response == ERROR or "エラーが発生しました" in response:
+    try:
+        response = ai_mgr.send_message(message)
+        await interaction.followup.send(response)
+    except AIError as e:
         message_quoted = "> " + message
         await interaction.followup.send(message_quoted, embed=ERROR_EMBED)
-    else:
-        await interaction.followup.send(response)
 
 @bot.event
 async def on_message(message):
@@ -62,13 +60,12 @@ async def on_message(message):
 
         # タイピングインジケータを表示
         async with message.channel.typing():
-            response = ai_mgr.send_message(content)
-
-            if response == ERROR or "エラーが発生しました" in response:
+            try:
+                response = ai_mgr.send_message(content)
+                await message.channel.send(response)
+            except AIError as e:
                 message_quoted = "> " + content
                 await message.channel.send(message_quoted, embed=ERROR_EMBED)
-            else:
-                await message.channel.send(response)
 
 @bot.tree.command(name="search", description="Webを検索して要約")
 async def search(interaction: discord.Interaction, query: str):
