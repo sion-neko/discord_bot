@@ -44,7 +44,7 @@ class BaseAIClient(ABC):
     def _make_answer(self, user_msg: str, response: str) -> str:
         """Discord用に応答をフォーマット (ユーザーメッセージを引用)"""
         # モデル名を斜体で追加 (Discordマークダウン: *text*)
-        model_signature = f"\n\n✨  *{self.MODEL_NAME}*"
+        model_signature = f"\n\n\-  *{self.MODEL_NAME}*"
         formatted = f"> {user_msg}\n\n{response}{model_signature}"
 
         # Discordの2000文字制限に対応
