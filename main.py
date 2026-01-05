@@ -105,8 +105,18 @@ async def search(interaction: discord.Interaction, query: str):
         print(f"[/search] Perplexity検索実行: {query}")
         result = ai_mgr.perplexity_client.search(query)
 
-        # 検索結果をEmbedで表示
-        await interaction.followup.send(result["content"])
+        # 応答本文を取得
+        response_text = result["content"]
+
+        # 参照URLがある場合は追加
+        citations = result.get("citations", [])
+        if citations:
+            response_text += "\n\n**参照:**"
+            max_links = 3  # 上位3件に制限
+            for i, url in enumerate(citations[:max_links], start=1):
+                response_text += f"\n{i}. <{url}>"
+
+        await interaction.followup.send(response_text)
 
     except Exception as e:
         print(f"[/search] 検索失敗: {e}")
