@@ -39,30 +39,36 @@ async def talk(interaction: discord.Interaction, message: str):
 
     response = ai_mgr.send_message(message)
 
-    # 検索結果の場合
-    if isinstance(response, dict):
-        if response.get("type") == "search_result":
-            # Embed形式で表示
-            embed = create_search_embed(response)
-            await interaction.followup.send(embed=embed)
-            return
-
-        elif response.get("type") == "error":
-            # エラーEmbed
-            error_embed = discord.Embed(
-                title="検索エラー",
-                description=response["message"],
-                color=0xff0000
-            )
-            await interaction.followup.send(embed=error_embed)
-            return
-
-    # 通常の会話応答
     if response == ERROR or "エラーが発生しました" in response:
         message_quoted = "> " + message
         await interaction.followup.send(message_quoted, embed=ERROR_EMBED)
     else:
         await interaction.followup.send(response)
+
+@bot.event
+async def on_message(message):
+    # Bot自身のメッセージは無視
+    if message.author.bot:
+        return
+
+    # Botへのメンションをチェック
+    if bot.user in message.mentions:
+        content = message.content.replace(f'<@{bot.user.id}>', '').replace(f'<@!{bot.user.id}>', '').strip()
+
+        # 引数が空の場合は定型文を返す
+        if not content:
+            await message.channel.send("何かご用ですか？")
+            return
+
+        # タイピングインジケータを表示
+        async with message.channel.typing():
+            response = ai_mgr.send_message(content)
+
+            if response == ERROR or "エラーが発生しました" in response:
+                message_quoted = "> " + content
+                await message.channel.send(message_quoted, embed=ERROR_EMBED)
+            else:
+                await message.channel.send(response)
 
 @bot.tree.command(name="search", description="Webを検索して要約")
 async def search(interaction: discord.Interaction, query: str):
