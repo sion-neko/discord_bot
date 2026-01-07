@@ -1,6 +1,9 @@
 import os
 from openai import OpenAI
 from typing import Dict, List
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class PerplexityClient:
@@ -70,5 +73,5 @@ class PerplexityClient:
             }
 
         except Exception as e:
-            print(f"[PerplexityClient] 検索失敗: {e}")
+            logger.error(f"[PerplexityClient] 検索失敗: {e}")
             raise

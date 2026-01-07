@@ -1,5 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class BaseAIClient(ABC):
@@ -62,6 +65,6 @@ class BaseAIClient(ABC):
             if len(self.chat_history) >= 2:
                 self.chat_history.pop(0)
                 self.chat_history.pop(0)
-                print(f"[{self.__class__.__name__}] 会話履歴を削除しました")
+                logger.debug(f"[{self.__class__.__name__}] 会話履歴を削除しました")
             else:
                 break

@@ -1,6 +1,9 @@
 import os
 import google.generativeai as genai
 from ai.base_client import BaseAIClient
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 # Safety設定 (元のgoogleAI.pyから)
 SAFETY_CONFIG = [
@@ -74,7 +77,7 @@ class GeminiClient(BaseAIClient):
             return self._make_answer(message, response.text)
 
         except Exception as e:
-            print(f"[GeminiClient] エラー: {type(e).__name__}: {str(e)}")
+            logger.error(f"[GeminiClient] エラー: {type(e).__name__}: {str(e)}")
             raise
 
     def prune_history(self) -> None:
@@ -92,7 +95,7 @@ class GeminiClient(BaseAIClient):
                 # 更新された履歴で新しいチャットを開始
                 self.chat = self.model.start_chat(history=self.chat.history)
 
-                print(f"[GeminiClient] 会話履歴を削除しました")
+                logger.debug(f"[GeminiClient] 会話履歴を削除しました")
                 for msg in removed_messages:
                     text_preview = msg.parts[0].text[:50] if msg.parts else ""
-                    print(f"  - {msg.role}: {text_preview}...")
+                    logger.debug(f"  - {msg.role}: {text_preview}...")

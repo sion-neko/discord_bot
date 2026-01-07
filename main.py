@@ -7,6 +7,9 @@ import traceback
 import random
 from keep_alive import keep_alive
 import sys
+from utils.logger import setup_logger
+
+logger = setup_logger(__name__)
 
 API = api.API()
 ai_mgr = AIManager()
@@ -21,15 +24,15 @@ async def on_ready():
         await bot.tree.sync(guild=discord.Object(id=server.id))
 
     await bot.tree.sync()
-    print("python-version："+sys.version)
-    print(f"{bot.user}:起動完了")
+    logger.info(f"python-version：{sys.version}")
+    logger.info(f"{bot.user}:起動完了")
 
 @bot.event
 async def on_command_error(ctx, error):
     orig_error = getattr(error, "original", error)
     error_msg = ''.join(
         traceback.TracebackException.from_exception(orig_error).format())
-    print(error_msg)
+    logger.error(error_msg)
     await ctx.send(embed=ERROR_EMBED)
 
 
@@ -102,7 +105,7 @@ async def search(interaction: discord.Interaction, query: str):
 
     try:
         # Perplexityで直接検索
-        print(f"[/search] Perplexity検索実行: {query}")
+        logger.info(f"[/search] Perplexity検索実行: {query}")
         result = ai_mgr.perplexity_client.search(query)
 
         # 応答本文を取得
@@ -119,7 +122,7 @@ async def search(interaction: discord.Interaction, query: str):
         await interaction.followup.send(response_text)
 
     except Exception as e:
-        print(f"[/search] 検索失敗: {e}")
+        logger.error(f"[/search] 検索失敗: {e}")
         error_embed = discord.Embed(
             title="検索エラー",
             description=f"検索中にエラーが発生しました: {str(e)}",
@@ -154,15 +157,15 @@ keep_alive()
 # BOT_TOKENの確認
 bot_token = os.getenv('BOT_TOKEN')
 if not bot_token:
-    print("ERROR: BOT_TOKENが設定されていません。.envファイルを確認してください。")
+    logger.error("BOT_TOKENが設定されていません。.envファイルを確認してください。")
     sys.exit(1)
 
 try:
     bot.run(bot_token)
 except discord.LoginFailure:
-    print("ERROR: BOT_TOKENが無効です。正しいトークンを.envファイルに設定してください。")
+    logger.error("BOT_TOKENが無効です。正しいトークンを.envファイルに設定してください。")
     sys.exit(1)
 except Exception as e:
-    print(f"ERROR: 予期しないエラーが発生しました: {e}")
+    logger.error(f"予期しないエラーが発生しました: {e}")
     traceback.print_exc()
     sys.exit(1)
