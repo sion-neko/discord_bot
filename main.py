@@ -111,6 +111,8 @@ async def search(interaction: discord.Interaction, query: str):
         await interaction.followup.send(embed=error_embed)
         return
 
+    query_quoted = f"> {query}"
+
     try:
         # Perplexityで直接検索
         result = ai_mgr.perplexity_client.search(query)
@@ -126,7 +128,9 @@ async def search(interaction: discord.Interaction, query: str):
             for i, url in enumerate(citations[:max_links], start=1):
                 response_text += f"\n{i}. <{url}>"
 
-        await interaction.followup.send(response_text)
+        # 検索クエリの引用を追加
+        final_response = f"{query_quoted}\n\n{response_text}"
+        await interaction.followup.send(final_response)
 
     except Exception as e:
         logger.error(f"[/search] Error: {e}")
@@ -135,7 +139,7 @@ async def search(interaction: discord.Interaction, query: str):
             description=f"検索中にエラーが発生しました: {str(e)}",
             color=0xff0000
         )
-        await interaction.followup.send(embed=error_embed)
+        await interaction.followup.send(query_quoted, embed=error_embed)
 
 @bot.tree.command(name="r", description="数字をランダム出力")
 async def r(interaction: discord.Interaction, num: int):
