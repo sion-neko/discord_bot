@@ -1,9 +1,9 @@
 import os
 from ai.clients import GroqClient, GeminiClient, PerplexityClient
 from ai.exceptions import AIError
-from utils.logger import get_logger
+from utils.logger import setup_logger
 
-logger = get_logger(__name__)
+logger = setup_logger(__name__)
 
 
 class AIManager:

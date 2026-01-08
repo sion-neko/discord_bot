@@ -1,9 +1,9 @@
 import os
 from groq import Groq
 from ai.base_client import BaseAIClient
-from utils.logger import get_logger
+from utils.logger import setup_logger
 
-logger = get_logger(__name__)
+logger = setup_logger(__name__)
 
 
 class GroqClient(BaseAIClient):

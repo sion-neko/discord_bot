@@ -1,9 +1,9 @@
 import os
 import google.generativeai as genai
 from ai.base_client import BaseAIClient
-from utils.logger import get_logger
+from utils.logger import setup_logger
 
-logger = get_logger(__name__)
+logger = setup_logger(__name__)
 
 # Safety設定 (元のgoogleAI.pyから)
 SAFETY_CONFIG = [
