@@ -17,23 +17,23 @@ class AIManager:
         self.gemini_client = None
         self.perplexity_client = None
 
+        clients_enabled = []
+
         # Groqクライアントを初期化 (API keyがある場合)
         if os.getenv('GROQ_API_KEY'):
             try:
                 self.groq_client = GroqClient()
-                logger.info("[AIManager] Groq client を初期化しました")
+                clients_enabled.append("Groq")
             except Exception as e:
-                logger.warning(f"[AIManager] Groq初期化失敗: {e}")
-        else:
-            logger.info("[AIManager] GROQ_API_KEY が未設定のため、Groqは無効です")
+                logger.warning(f"Groq init failed: {e}")
 
         # Geminiクライアントを初期化 (フォールバック用・必須)
         if os.getenv('GOOGLE_API_KEY'):
             try:
                 self.gemini_client = GeminiClient()
-                logger.info("[AIManager] Gemini client を初期化しました")
+                clients_enabled.append("Gemini")
             except Exception as e:
-                logger.error(f"[AIManager] Gemini初期化失敗: {e}")
+                logger.error(f"Gemini init failed: {e}")
                 raise ValueError("Gemini APIは必須です (フォールバック用)")
         else:
             raise ValueError("GOOGLE_API_KEY は必須です (フォールバック用)")
@@ -42,16 +42,16 @@ class AIManager:
         if os.getenv('PERPLEXITY_API_KEY'):
             try:
                 self.perplexity_client = PerplexityClient()
-                logger.info("[AIManager] Perplexity client を初期化しました")
+                clients_enabled.append("Perplexity")
             except Exception as e:
-                logger.warning(f"[AIManager] Perplexity初期化失敗: {e}")
+                logger.warning(f"Perplexity init failed: {e}")
                 self.perplexity_client = None
-        else:
-            logger.info("[AIManager] PERPLEXITY_API_KEY が未設定のため、Web検索は無効です")
 
         # 少なくとも1つのクライアントが必要
         if not self.groq_client and not self.gemini_client:
             raise ValueError("利用可能なAI Clientがありません。APIキーを確認してください")
+
+        logger.info(f"AI clients: {', '.join(clients_enabled)}")
 
     def send_message(self, message: str) -> str:
         """
@@ -66,26 +66,14 @@ class AIManager:
         # Groqを優先して試行 (利用可能な場合)
         if self.groq_client is not None:
             try:
-                response = self.groq_client.send_message(message)
-                logger.info(f"[AIManager] ✓ Groq API を使用しました")
-                return response
-
+                return self.groq_client.send_message(message)
             except Exception as e:
-                logger.warning(f"[AIManager] Groq失敗 ({type(e).__name__}): {str(e)}")
-                logger.info(f"[AIManager] → Geminiへフォールバック中...")
+                logger.warning(f"Groq failed, fallback to Gemini: {type(e).__name__}")
 
         # Geminiへフォールバック (初期化時に存在保証済み)
         try:
-            response = self.gemini_client.send_message(message)
-
-            if self.groq_client is None:
-                logger.info(f"[AIManager] ✓ Gemini API を使用しました (Groq無効)")
-            else:
-                logger.info(f"[AIManager] ✓ Gemini API を使用しました (フォールバック)")
-
-            return response
-
+            return self.gemini_client.send_message(message)
         except Exception as e:
-            error_msg = f"両方のAPIが失敗しました。Geminiエラー: {type(e).__name__}: {str(e)}"
-            logger.error(f"[AIManager] {error_msg}")
+            error_msg = f"All APIs failed. Gemini: {type(e).__name__}: {str(e)}"
+            logger.error(error_msg)
             raise AIError(error_msg) from e

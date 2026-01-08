@@ -77,25 +77,18 @@ class GeminiClient(BaseAIClient):
             return self._make_answer(message, response.text)
 
         except Exception as e:
-            logger.error(f"[GeminiClient] エラー: {type(e).__name__}: {str(e)}")
+            logger.error(f"[GeminiClient] {type(e).__name__}: {str(e)}")
             raise
 
     def prune_history(self) -> None:
         """Gemini用の履歴削除 (システムプロンプト保持、最古のペアを削除)"""
         # システムプロンプト(最初の2メッセージ)を保持したまま削除
         if len(self.chat.history) > self.MAX_HISTORY_LENGTH + 2:
-            removed_messages = []
-
             # index 2以降から最古のuser-modelペアを削除
             if len(self.chat.history) >= 4:  # system(2) + user + model
                 # index 2, 3を削除(システムプロンプトの次のペア)
-                removed_messages.append(self.chat.history.pop(2))
-                removed_messages.append(self.chat.history.pop(2))
+                self.chat.history.pop(2)
+                self.chat.history.pop(2)
 
                 # 更新された履歴で新しいチャットを開始
                 self.chat = self.model.start_chat(history=self.chat.history)
-
-                logger.debug(f"[GeminiClient] 会話履歴を削除しました")
-                for msg in removed_messages:
-                    text_preview = msg.parts[0].text[:50] if msg.parts else ""
-                    logger.debug(f"  - {msg.role}: {text_preview}...")

@@ -44,12 +44,9 @@ async def on_command_error(ctx, error):
 
 @bot.tree.command(name="talk", description="AIアシスタントとおしゃべり")
 async def talk(interaction: discord.Interaction, message: str):
-    logger.info(f"[/talk] コマンド実行開始: user={interaction.user.name}, message={message[:50]}...")
-
     # DMからのコマンドは拒否
     if isinstance(interaction.channel, discord.DMChannel):
         await interaction.response.send_message(DM_REJECTED_MESSAGE, ephemeral=True)
-        logger.info(f"[/talk] DMから拒否")
         return
 
     await interaction.response.defer(thinking=True)
@@ -59,9 +56,8 @@ async def talk(interaction: discord.Interaction, message: str):
         # /talkコマンドでは引用を付ける
         final_response = f"{message_quoted}\n\n{response}"
         await interaction.followup.send(final_response)
-        logger.info(f"[/talk] 応答送信完了")
     except AIError as e:
-        logger.error(f"[/talk] AIエラー発生: {e}")
+        logger.error(f"[/talk] Error: {e}")
         await interaction.followup.send(message_quoted, embed=ERROR_EMBED)
 
 @bot.event
@@ -72,21 +68,17 @@ async def on_message(message):
 
     # Botへのメンションをチェック
     if bot.user in message.mentions:
-        logger.info(f"[mention] メンション受信: user={message.author.name}, content={message.content[:50]}...")
-
         # メンション文字列を除去
         content = message.content.replace(f'<@{bot.user.id}>', '').replace(f'<@!{bot.user.id}>', '').strip()
 
         # 空メッセージの場合は定型文を返す
         if not content:
             await message.channel.send("何かご用ですか？")
-            logger.info(f"[mention] 空メッセージのため定型文を返答")
             return
 
         # DMからは拒否
         if isinstance(message.channel, discord.DMChannel):
             await message.channel.send(DM_REJECTED_MESSAGE)
-            logger.info(f"[mention] DMから拒否")
             return
 
         # タイピングインジケータを表示しながらAI応答取得と送信
@@ -94,21 +86,17 @@ async def on_message(message):
             try:
                 response = ai_mgr.send_message(content)
                 await message.channel.send(response)
-                logger.info(f"[mention] 応答送信完了")
             except AIError as e:
-                logger.error(f"[mention] AIエラー発生: {e}")
+                logger.error(f"[mention] Error: {e}")
                 message_quoted = "> " + content
                 await message.channel.send(message_quoted, embed=ERROR_EMBED)
 
 @bot.tree.command(name="search", description="Webを検索して要約")
 async def search(interaction: discord.Interaction, query: str):
     """Perplexity APIで直接Web検索"""
-    logger.info(f"[/search] コマンド実行開始: user={interaction.user.name}, query={query}")
-
     # DMからのコマンドは拒否
     if isinstance(interaction.channel, discord.DMChannel):
         await interaction.response.send_message(DM_REJECTED_MESSAGE, ephemeral=True)
-        logger.info(f"[/search] DMから拒否")
         return
 
     await interaction.response.defer(thinking=True)
@@ -126,7 +114,6 @@ async def search(interaction: discord.Interaction, query: str):
     try:
         # Perplexityで直接検索
         result = ai_mgr.perplexity_client.search(query)
-        logger.info(f"[/search] Perplexity検索完了")
 
         # 応答本文を取得
         response_text = result["content"]
@@ -140,10 +127,9 @@ async def search(interaction: discord.Interaction, query: str):
                 response_text += f"\n{i}. <{url}>"
 
         await interaction.followup.send(response_text)
-        logger.info(f"[/search] 応答送信完了")
 
     except Exception as e:
-        logger.error(f"[/search] 検索失敗: {e}")
+        logger.error(f"[/search] Error: {e}")
         error_embed = discord.Embed(
             title="検索エラー",
             description=f"検索中にエラーが発生しました: {str(e)}",

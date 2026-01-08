@@ -59,7 +59,6 @@ class GroqClient(BaseAIClient):
 
             # 通常の会話応答
             if response_message is None:
-                logger.warning(f"[GroqClient] 警告: contentがNoneです。")
                 response_message = "応答を生成できませんでした。"
 
             elif response.executed_tools:
@@ -79,9 +78,9 @@ class GroqClient(BaseAIClient):
 
                     # Discordマークダウン形式
                     response_message += f"\n{i}. [{title}]({result.url})"
-            
+
         except Exception as e:
-            logger.error(f"[GroqClient] エラー: {type(e).__name__}: {str(e)}")
+            logger.error(f"[GroqClient] {type(e).__name__}: {str(e)}")
             raise  # 上位(AIManager)でフォールバック処理するため再raise
 
         assistant_msg = {"role": "assistant", "content": response_message}
@@ -99,6 +98,5 @@ class GroqClient(BaseAIClient):
                 self.chat_history.pop(1)  # index 1 (最古のユーザーメッセージ)
                 if len(self.chat_history) > 2:
                     self.chat_history.pop(1)  # 最古のアシスタントメッセージ
-                logger.debug(f"[GroqClient] 会話履歴を削除しました")
             else:
                 break

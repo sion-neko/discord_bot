@@ -73,5 +73,5 @@ class PerplexityClient:
             }
 
         except Exception as e:
-            logger.error(f"[PerplexityClient] 検索失敗: {e}")
+            logger.error(f"[PerplexityClient] Search failed: {e}")
             raise
