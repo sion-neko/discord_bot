@@ -68,7 +68,17 @@ class AIManager:
             try:
                 return self.groq_client.send_message(message)
             except Exception as e:
-                logger.warning(f"Groq failed, fallback to Gemini: {type(e).__name__}")
+                error_name = type(e).__name__
+                logger.warning(f"Groq failed, fallback to Gemini: {error_name}")
+
+                # 413エラー (Payload Too Large) の場合は会話履歴も出力
+                if "413" in str(e) or "RequestEntityTooLarge" in error_name or "PayloadTooLarge" in error_name:
+                    history = getattr(self.groq_client, 'chat_history', [])
+                    logger.warning(f"[413 Debug] History length: {len(history)}")
+                    for i, msg in enumerate(history):
+                        role = msg.get('role', 'unknown')
+                        content = msg.get('content', '')[:100]  # 最初の100文字のみ
+                        logger.warning(f"[413 Debug] [{i}] {role}: {content}...")
 
         # Geminiへフォールバック (初期化時に存在保証済み)
         try:
