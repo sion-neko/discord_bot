@@ -22,6 +22,7 @@ ai_mgr = AIManager()
 bot = Bot(command_prefix='$', intents=discord.Intents.all())
 ERROR_EMBED = discord.Embed(title="Error!",color=0xff0000, description="エラーが発生しました。管理者に連絡してください。\n")
 DM_REJECTED_MESSAGE = "このBotとの会話はサーバーでのみ使用できます。"
+SUMABRA_CHARA = ["マリオ","マルス","ピクミン&オリマー","クラウド","ドンキーコング","ルキナ","ルカリオ","カムイ","リンク","こどもリンク","ロボット","ベヨネッタ","サムス","ガノンドロフ","トゥーンリンク","インクリング","ダークサムス","ミュウツー","ウルフ","リドリー","ヨッシー","ロイ","むらびと","シモン","カービィ","クロム","ロックマン","リヒター","フォックス","Mr.ゲーム&ウォッチ","Wii Fit トレーナー","キングクルール","ピカチュウ","メタナイト","ロゼッタ&チコ","しずえ","ルイージ","ピット","リトル・マック","ガオガエン","ネス","ブラックピット","ゲッコウガ","パックンフラワー","キャプテン・ファルコン","ゼロスーツサムス","格闘Mii","ジョーカー","プリン","ワリオ","剣術Mii","勇者","ピーチ","スネーク","射撃Mii","バンジョー&カズーイ","デイジー","アイク","パルテナ","テリー","クッパ","ゼニガメ","パックマン","ベレト／ベレス","アイスクライマー","フシギソウ","ルフレ","ミェンミェン","シーク","リザードン","シュルク","スティーブ／アレックス","ゼルダ","ディディーコング","クッパ Jr.","セフィロス","ドクターマリオ","リュカ","ダックハント","ホムラ","ピチュー","ソニック","リュウ","ヒカリ","ファルコ","デデデ","ケン","カズヤ","ソラ"]
 
 
 @bot.event
@@ -44,12 +45,12 @@ async def on_command_error(ctx, error):
 
 @bot.tree.command(name="talk", description="AIアシスタントとおしゃべり")
 async def talk(interaction: discord.Interaction, message: str):
+    await interaction.response.defer(thinking=True)
     # DMからのコマンドは拒否
     if isinstance(interaction.channel, discord.DMChannel):
-        await interaction.response.send_message(DM_REJECTED_MESSAGE, ephemeral=True)
+        await interaction.followup.send(DM_REJECTED_MESSAGE, ephemeral=True)
         return
 
-    await interaction.response.defer(thinking=True)
     message_quoted = "> " + message
     try:
         response = ai_mgr.send_message(message)
@@ -146,15 +147,11 @@ async def r(interaction: discord.Interaction, num: int):
     result = random.randint(1, int(num))
     await interaction.response.send_message(result)
 
-@bot.tree.command(name="r_sma", description="ずんだもんがスマブラSPのキャラを選ぶよ")
+@bot.tree.command(name="r_sma", description="スマブラSPのキャラクターをランダム選択")
 async def r_suma(interaction):
-    with open("./data/smabra.txt") as f:
-            all_chara = f.readlines()
-    chara_no = random.randint(1, len(all_chara))
-
-    result = all_chara[chara_no]
-
-    await interaction.response.send_message(result)
+    chara_no = random.randint(0, len(SUMABRA_CHARA)-1)
+    chara = SUMABRA_CHARA[chara_no]
+    await interaction.response.send_message(chara)
 
 @bot.tree.command(name="dog", description="わんちゃん")
 async def dog(interaction):
