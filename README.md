@@ -30,6 +30,10 @@ cd 8_discord_bot
 python3 -m venv venv
 source venv/bin/activate
 ```
+windowsの場合は
+```bash
+source venv/Scripts/activate
+```
 
 ### 3. 依存関係のインストール
 
