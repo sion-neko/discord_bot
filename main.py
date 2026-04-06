@@ -5,7 +5,7 @@ import api
 from ai import AIManager, AIError
 import traceback
 import random
-from keep_alive import keep_alive
+
 import sys
 import logging
 from utils.logger import setup_logger
