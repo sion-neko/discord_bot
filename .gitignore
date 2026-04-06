@@ -3,3 +3,4 @@ __pycache__
 memo.txt
 venv
 .claude
+logs/

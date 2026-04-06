@@ -48,6 +48,8 @@ async def on_command_error(ctx, error):
 
 @bot.tree.command(name="talk", description="AIアシスタントとおしゃべり")
 async def talk(interaction: discord.Interaction, message: str):
+    logger.info(
+        f"[/talk] user={interaction.user} guild={interaction.guild} message={message[:50]}")
     await interaction.response.defer(thinking=True)
     # DMからのコマンドは拒否
     if isinstance(interaction.channel, discord.DMChannel):
@@ -88,6 +90,8 @@ async def on_message(message):
             return
 
         # タイピングインジケータを表示しながらAI応答取得と送信
+        logger.info(
+            f"[mention] user={message.author} guild={message.guild} message={content[:50]}")
         async with message.channel.typing():
             try:
                 response = ai_mgr.send_message(content)
@@ -101,6 +105,8 @@ async def on_message(message):
 @bot.tree.command(name="search", description="Webを検索して要約")
 async def search(interaction: discord.Interaction, query: str):
     """Perplexity APIで直接Web検索"""
+    logger.info(
+        f"[/search] user={interaction.user} guild={interaction.guild} query={query[:50]}")
     # DMからのコマンドは拒否
     if isinstance(interaction.channel, discord.DMChannel):
         await interaction.response.send_message(DM_REJECTED_MESSAGE, ephemeral=True)
@@ -151,12 +157,14 @@ async def search(interaction: discord.Interaction, query: str):
 
 @bot.tree.command(name="r", description="数字をランダム出力")
 async def r(interaction: discord.Interaction, num: int):
+    logger.info(f"[/r] user={interaction.user} num={num}")
     result = random.randint(1, int(num))
     await interaction.response.send_message(result)
 
 
 @bot.tree.command(name="r_sma", description="スマブラSPのキャラクターをランダム選択")
 async def r_suma(interaction):
+    logger.info(f"[/r_sma] user={interaction.user}")
     chara_no = random.randint(0, len(SUMABRA_CHARA)-1)
     chara = SUMABRA_CHARA[chara_no]
     await interaction.response.send_message(chara)
@@ -164,8 +172,10 @@ async def r_suma(interaction):
 
 @bot.tree.command(name="dog", description="わんちゃん")
 async def dog(interaction):
+    await interaction.response.defer()
+    logger.info(f"[/dog] user={interaction.user}")
     res = API.dog()
-    await interaction.response.send_message(res)
+    await interaction.followup.send(res)
 
 # BOT_TOKENの確認
 bot_token = os.getenv('BOT_TOKEN')
