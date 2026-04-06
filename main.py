@@ -20,9 +20,11 @@ discord_logger.setLevel(logging.INFO)
 API = api.API()
 ai_mgr = AIManager()
 bot = Bot(command_prefix='$', intents=discord.Intents.all())
-ERROR_EMBED = discord.Embed(title="Error!",color=0xff0000, description="エラーが発生しました。管理者に連絡してください。\n")
+ERROR_EMBED = discord.Embed(
+    title="Error!", color=0xff0000, description="エラーが発生しました。管理者に連絡してください。\n")
 DM_REJECTED_MESSAGE = "このBotとの会話はサーバーでのみ使用できます。"
-SUMABRA_CHARA = ["マリオ","マルス","ピクミン&オリマー","クラウド","ドンキーコング","ルキナ","ルカリオ","カムイ","リンク","こどもリンク","ロボット","ベヨネッタ","サムス","ガノンドロフ","トゥーンリンク","インクリング","ダークサムス","ミュウツー","ウルフ","リドリー","ヨッシー","ロイ","むらびと","シモン","カービィ","クロム","ロックマン","リヒター","フォックス","Mr.ゲーム&ウォッチ","Wii Fit トレーナー","キングクルール","ピカチュウ","メタナイト","ロゼッタ&チコ","しずえ","ルイージ","ピット","リトル・マック","ガオガエン","ネス","ブラックピット","ゲッコウガ","パックンフラワー","キャプテン・ファルコン","ゼロスーツサムス","格闘Mii","ジョーカー","プリン","ワリオ","剣術Mii","勇者","ピーチ","スネーク","射撃Mii","バンジョー&カズーイ","デイジー","アイク","パルテナ","テリー","クッパ","ゼニガメ","パックマン","ベレト／ベレス","アイスクライマー","フシギソウ","ルフレ","ミェンミェン","シーク","リザードン","シュルク","スティーブ／アレックス","ゼルダ","ディディーコング","クッパ Jr.","セフィロス","ドクターマリオ","リュカ","ダックハント","ホムラ","ピチュー","ソニック","リュウ","ヒカリ","ファルコ","デデデ","ケン","カズヤ","ソラ"]
+SUMABRA_CHARA = ["マリオ", "マルス", "ピクミン&オリマー", "クラウド", "ドンキーコング", "ルキナ", "ルカリオ", "カムイ", "リンク", "こどもリンク", "ロボット", "ベヨネッタ", "サムス", "ガノンドロフ", "トゥーンリンク", "インクリング", "ダークサムス", "ミュウツー", "ウルフ", "リドリー", "ヨッシー", "ロイ", "むらびと", "シモン", "カービィ", "クロム", "ロックマン", "リヒター", "フォックス", "Mr.ゲーム&ウォッチ", "Wii Fit トレーナー", "キングクルール", "ピカチュウ", "メタナイト", "ロゼッタ&チコ", "しずえ", "ルイージ", "ピット", "リトル・マック", "ガオガエン", "ネス", "ブラックピット", "ゲッコウガ",
+                 "パックンフラワー", "キャプテン・ファルコン", "ゼロスーツサムス", "格闘Mii", "ジョーカー", "プリン", "ワリオ", "剣術Mii", "勇者", "ピーチ", "スネーク", "射撃Mii", "バンジョー&カズーイ", "デイジー", "アイク", "パルテナ", "テリー", "クッパ", "ゼニガメ", "パックマン", "ベレト／ベレス", "アイスクライマー", "フシギソウ", "ルフレ", "ミェンミェン", "シーク", "リザードン", "シュルク", "スティーブ／アレックス", "ゼルダ", "ディディーコング", "クッパ Jr.", "セフィロス", "ドクターマリオ", "リュカ", "ダックハント", "ホムラ", "ピチュー", "ソニック", "リュウ", "ヒカリ", "ファルコ", "デデデ", "ケン", "カズヤ", "ソラ"]
 
 
 @bot.event
@@ -33,6 +35,7 @@ async def on_ready():
     await bot.tree.sync()
     logger.info(f"python-version：{sys.version}")
     logger.info(f"{bot.user}:起動完了")
+
 
 @bot.event
 async def on_command_error(ctx, error):
@@ -61,6 +64,7 @@ async def talk(interaction: discord.Interaction, message: str):
         logger.error(f"[/talk] Error: {e}")
         await interaction.followup.send(message_quoted, embed=ERROR_EMBED)
 
+
 @bot.event
 async def on_message(message):
     # Bot自身のメッセージは無視
@@ -70,7 +74,8 @@ async def on_message(message):
     # Botへのメンションをチェック
     if bot.user in message.mentions:
         # メンション文字列を除去
-        content = message.content.replace(f'<@{bot.user.id}>', '').replace(f'<@!{bot.user.id}>', '').strip()
+        content = message.content.replace(
+            f'<@{bot.user.id}>', '').replace(f'<@!{bot.user.id}>', '').strip()
 
         # 空メッセージの場合は定型文を返す
         if not content:
@@ -91,6 +96,7 @@ async def on_message(message):
                 logger.error(f"[mention] Error: {e}")
                 message_quoted = "> " + content
                 await message.channel.send(message_quoted, embed=ERROR_EMBED)
+
 
 @bot.tree.command(name="search", description="Webを検索して要約")
 async def search(interaction: discord.Interaction, query: str):
@@ -142,10 +148,12 @@ async def search(interaction: discord.Interaction, query: str):
         )
         await interaction.followup.send(query_quoted, embed=error_embed)
 
+
 @bot.tree.command(name="r", description="数字をランダム出力")
 async def r(interaction: discord.Interaction, num: int):
     result = random.randint(1, int(num))
     await interaction.response.send_message(result)
+
 
 @bot.tree.command(name="r_sma", description="スマブラSPのキャラクターをランダム選択")
 async def r_suma(interaction):
@@ -153,14 +161,11 @@ async def r_suma(interaction):
     chara = SUMABRA_CHARA[chara_no]
     await interaction.response.send_message(chara)
 
+
 @bot.tree.command(name="dog", description="わんちゃん")
 async def dog(interaction):
-    res= API.dog()
+    res = API.dog()
     await interaction.response.send_message(res)
-
-
-# Web サーバの立ち上げ
-keep_alive()
 
 # BOT_TOKENの確認
 bot_token = os.getenv('BOT_TOKEN')
