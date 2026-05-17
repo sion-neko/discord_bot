@@ -6,7 +6,7 @@ logger = setup_logger(__name__)
 
 
 class BaseAIClient(ABC):
-    """AI Clientの抽象基底クラス (Groq, Gemini, etc.)"""
+    """AI Clientの抽象基底クラス"""
 
     MAX_HISTORY_LENGTH = 20  # クラス定数: 会話履歴の最大長
 
