@@ -5,13 +5,15 @@ from utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 
+_TOOLS = [{"type": "web_search"}, {"type": "x_search"}]
+
 
 class GrokClient(BaseAIClient):
     """xAI Grok API Client"""
 
     MODEL_NAME = "grok-3-mini"
     TEMPERATURE = 1.0
-    MAX_TOKENS = 200
+    MAX_TOKENS = 1000
 
     def __init__(self):
         super().__init__()
@@ -26,28 +28,24 @@ class GrokClient(BaseAIClient):
         )
 
         self.chat_history = [
-            {
-                "role": "system",
-                "content": self.SYSTEM_PROMPT
-            }
-        ]
+            {"role": "system", "content": self.SYSTEM_PROMPT}
+        ] 
 
     def send_message(self, input_message: str) -> str:
-        user_msg = {"role": "user", "content": input_message}
-        self.chat_history.append(user_msg)
+        self.chat_history.append({"role": "user", "content": input_message})
 
         try:
-            response = self.client.chat.completions.create(
+            response = self.client.responses.create(
                 model=self.MODEL_NAME,
-                messages=self.chat_history,
+                input=self.chat_history,
+                tools=_TOOLS,
                 temperature=self.TEMPERATURE,
-                max_tokens=self.MAX_TOKENS,
+                max_output_tokens=self.MAX_TOKENS,
             )
 
-            response_message = response.choices[0].message.content or "応答を生成できませんでした。"
+            response_message = response.output_text or "応答を生成できませんでした。"
 
-            assistant_msg = {"role": "assistant", "content": response_message}
-            self.chat_history.append(assistant_msg)
+            self.chat_history.append({"role": "assistant", "content": response_message})
             self.prune_history()
 
             return self._make_answer(input_message, response_message)

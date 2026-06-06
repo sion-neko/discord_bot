@@ -38,8 +38,6 @@ class AIManager:
 
     def send_message(self, message: str) -> str:
         """
-        メッセージを送信
-
         Raises:
             AIError: API呼び出しが失敗した場合
         """
