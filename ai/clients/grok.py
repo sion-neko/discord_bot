@@ -20,7 +20,7 @@ class GrokClient(BaseAIClient):
         if not api_key:
             raise ValueError("XAI_API_KEY が環境変数に設定されていません")
 
-        self.MODEL_NAME = os.getenv('AI_MODEL', 'grok-4.1-fast')
+        self.MODEL_NAME = os.getenv('AI_MODEL', 'grok-4.3')
         base_url = os.getenv('AI_BASE_URL', 'https://api.x.ai/v1')
         provider = os.getenv('AI_PROVIDER', 'xai')
         self._tools = _XAI_TOOLS if provider == 'xai' else []
