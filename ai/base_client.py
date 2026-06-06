@@ -44,18 +44,10 @@ class BaseAIClient(ABC):
         pass
 
     def _make_answer(self, user_msg: str, response: str) -> str:
-        """Discord用に応答をフォーマット"""
-        # モデル名を斜体で追加 (Discordマークダウン: *text*)
-        model_signature = f"\n\n\-  *{self.MODEL_NAME}*"
-        formatted = f"{response}{model_signature}"
-
-        # Discordの2000文字制限に対応
-        if len(formatted) > 2000:
-            max_response_len = 2000 - len(model_signature) - 3
-            truncated_response = response[:max_response_len] + "..."
-            formatted = f"{truncated_response}{model_signature}"
-
-        return formatted
+        """Discord用に応答をフォーマット（2000文字制限対応）"""
+        if len(response) > 2000:
+            return response[:1997] + "..."
+        return response
 
     def prune_history(self) -> None:
         """履歴が上限を超えたら最古のメッセージを削除"""
