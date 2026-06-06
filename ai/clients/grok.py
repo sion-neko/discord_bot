@@ -43,6 +43,7 @@ class GrokClient(BaseAIClient):
                 max_output_tokens=self.MAX_TOKENS,
             )
 
+            logger.info(f"[GrokClient] model={self.MODEL_NAME}")
             response_message = response.output_text or "応答を生成できませんでした。"
 
             self.chat_history.append({"role": "assistant", "content": response_message})
