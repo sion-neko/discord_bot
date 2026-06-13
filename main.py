@@ -5,6 +5,7 @@ import api
 from ai import AIManager, AIError
 import traceback
 import random
+from ddgs import DDGS
 
 import sys
 import logging
@@ -153,6 +154,38 @@ async def search(interaction: discord.Interaction, query: str):
             color=0xff0000
         )
         await interaction.followup.send(query_quoted, embed=error_embed)
+
+
+@bot.tree.command(name="image", description="画像を検索")
+async def image(interaction: discord.Interaction, query: str):
+    logger.info(
+        f"[/image] user={interaction.user} guild={interaction.guild} query={query[:50]}")
+    if isinstance(interaction.channel, discord.DMChannel):
+        await interaction.response.send_message(DM_REJECTED_MESSAGE, ephemeral=True)
+        return
+
+    await interaction.response.defer(thinking=True)
+
+    try:
+        with DDGS() as ddgs:
+            results = list(ddgs.images(query, max_results=1))
+
+        if not results:
+            await interaction.followup.send(f"> {query}\n\n画像が見つかりませんでした。")
+            return
+
+        img = results[0]
+        embed = discord.Embed(title=img.get("title", query), color=0x5865F2)
+        embed.set_image(url=img["image"])
+        embed.set_footer(text=f"検索: {query} | 出典: {img.get('source', '')}")
+        await interaction.followup.send(f"> {query}", embed=embed)
+
+    except Exception as e:
+        logger.error(f"[/image] Error: {e}")
+        await interaction.followup.send(
+            f"> {query}",
+            embed=discord.Embed(title="検索エラー", description=str(e), color=0xff0000)
+        )
 
 
 @bot.tree.command(name="r", description="数字をランダム出力")
