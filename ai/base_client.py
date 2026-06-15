@@ -28,19 +28,7 @@ class BaseAIClient(ABC):
     )
 
     @abstractmethod
-    def send_message(self, message: str) -> str:
-        """
-        AIにメッセージを送信して応答を取得
-
-        Args:
-            message: ユーザーのメッセージ
-
-        Returns:
-            AIの応答テキスト
-
-        Raises:
-            Exception: API呼び出しエラー時
-        """
+    def send_message(self, message: str, image_url: str = None) -> str:
         pass
 
     def _make_answer(self, user_msg: str, response: str) -> str:

@@ -34,8 +34,15 @@ class GrokClient(BaseAIClient):
             {"role": "system", "content": self.SYSTEM_PROMPT}
         ] 
 
-    def send_message(self, input_message: str) -> str:
-        self.chat_history.append({"role": "user", "content": input_message})
+    def send_message(self, input_message: str, image_url: str = None) -> str:
+        if image_url:
+            content = [
+                {"type": "text", "text": input_message},
+                {"type": "image_url", "image_url": {"url": image_url}},
+            ]
+        else:
+            content = input_message
+        self.chat_history.append({"role": "user", "content": content})
 
         try:
             response = self.client.responses.create(

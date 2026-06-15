@@ -36,13 +36,13 @@ class AIManager:
 
         logger.info(f"AI clients: {', '.join(clients_enabled)}")
 
-    def send_message(self, message: str) -> str:
+    def send_message(self, message: str, image_url: str = None) -> str:
         """
         Raises:
             AIError: API呼び出しが失敗した場合
         """
         try:
-            return self.grok_client.send_message(message)
+            return self.grok_client.send_message(message, image_url=image_url)
         except Exception as e:
             error_msg = f"Grok API failed. {type(e).__name__}: {str(e)}"
             logger.error(error_msg)

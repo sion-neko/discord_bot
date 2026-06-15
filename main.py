@@ -48,7 +48,7 @@ async def on_command_error(ctx, error):
 
 
 @bot.tree.command(name="talk", description="AIアシスタントとおしゃべり")
-async def talk(interaction: discord.Interaction, message: str):
+async def talk(interaction: discord.Interaction, message: str, image: discord.Attachment = None):
     logger.info(
         f"[/talk] user={interaction.user} guild={interaction.guild} message={message[:50]}")
     await interaction.response.defer(thinking=True)
@@ -57,9 +57,10 @@ async def talk(interaction: discord.Interaction, message: str):
         await interaction.followup.send(DM_REJECTED_MESSAGE, ephemeral=True)
         return
 
+    image_url = image.url if image else None
     message_quoted = "> " + message
     try:
-        response = ai_mgr.send_message(message)
+        response = ai_mgr.send_message(message, image_url=image_url)
         # /talkコマンドでは引用を付ける
         final_response = f"{message_quoted}\n\n{response}"
         await interaction.followup.send(final_response)
