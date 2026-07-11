@@ -5,7 +5,6 @@ import api
 from ai import AIManager, AIError
 import traceback
 import random
-from ddgs import DDGS
 
 import sys
 import logging
@@ -168,17 +167,25 @@ async def image(interaction: discord.Interaction, query: str):
     await interaction.response.defer(thinking=True)
 
     try:
-        with DDGS() as ddgs:
-            results = list(ddgs.images(query, max_results=1))
+        results = API.image_search(query)
+
+        if results is None:
+            await interaction.followup.send(
+                f"> {query}",
+                embed=discord.Embed(
+                    title="検索エラー", description="画像検索機能が利用できません。", color=0xff0000)
+            )
+            return
 
         if not results:
             await interaction.followup.send(f"> {query}\n\n画像が見つかりませんでした。")
             return
 
         img = results[0]
-        embed = discord.Embed(title=img.get("title", query), color=0x5865F2)
-        embed.set_image(url=img["image"])
-        embed.set_footer(text=f"検索: {query} | 出典: {img.get('source', '')}")
+        embed = discord.Embed(title=img.get("name", query), color=0x5865F2)
+        embed.set_image(url=img["contentUrl"])
+        embed.set_footer(
+            text=f"検索: {query} | 出典: {img.get('hostPageDisplayUrl', '')}")
         await interaction.followup.send(f"> {query}", embed=embed)
 
     except Exception as e:
