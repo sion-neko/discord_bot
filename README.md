@@ -6,6 +6,7 @@ xAI GrokとPerplexityを統合したDiscordボットです。サーバー内でA
 
 - **AIチャット**: メンションまたは `/talk` コマンドでAIアシスタントと会話
 - **Web検索**: `/search` コマンドでPerplexity APIを使用したWeb検索と要約（オプション）
+- **画像検索**: `/image` コマンドでBing Image Search APIを使用した画像検索（オプション）
 - **ランダムコマンド**: `/r` で数字のランダム生成、`/r_sma` でスマブラキャラクター選択
 - **犬画像取得**: `/dog` でランダムな犬の画像を取得
 
@@ -15,6 +16,7 @@ xAI GrokとPerplexityを統合したDiscordボットです。サーバー内でA
 - Discord Bot Token
 - xAI API Key
 - Perplexity API Key（`/search` コマンドを使う場合）
+- Bing Image Search API Key（`/image` コマンドを使う場合）
 
 ## セットアップ
 
@@ -26,6 +28,7 @@ xAI GrokとPerplexityを統合したDiscordボットです。サーバー内でA
 BOT_TOKEN=your_discord_bot_token_here
 XAI_API_KEY=your_xai_api_key_here
 PERPLEXITY_API_KEY=your_perplexity_api_key_here  # オプション
+BING_IMAGE_SEARCH_API_KEY=your_bing_image_search_api_key_here  # オプション
 ```
 
 #### 各APIキーの取得方法
@@ -33,6 +36,7 @@ PERPLEXITY_API_KEY=your_perplexity_api_key_here  # オプション
 - **Discord Bot Token**: [Discord Developer Portal](https://discord.com/developers/applications) でアプリケーションを作成し、Botトークンを取得
 - **xAI API Key**: [xAI Console](https://console.x.ai/) で取得
 - **Perplexity API Key**: [Perplexity API](https://www.perplexity.ai/) で取得
+- **Bing Image Search API Key**: [Azure Portal](https://portal.azure.com/) でBing Search v7リソースを作成して取得（月1,000リクエストまで無料）
 
 ### Docker で起動（推奨）
 
@@ -57,6 +61,7 @@ python main.py
 |---------|------|--------|
 | `/talk <message>` | AIアシスタントと会話 | `/talk こんにちは` |
 | `/search <query>` | Webを検索して要約 | `/search Python 最新情報` |
+| `/image <query>` | 画像を検索 | `/image 猫` |
 | `/r <num>` | 1からnumまでのランダムな整数を生成 | `/r 100` |
 | `/r_sma` | スマブラSPのキャラクターをランダムに選択 | `/r_sma` |
 | `/dog` | ランダムな犬の画像を取得 | `/dog` |
