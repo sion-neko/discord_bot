@@ -26,9 +26,15 @@ API = api.API()
 ai_mgr = AIManager()
 reminder_store = ReminderStore()
 bot = Bot(command_prefix='$', intents=discord.Intents.all())
-ERROR_EMBED = discord.Embed(
-    title="Error!", color=0xff0000, description="エラーが発生しました。管理者に連絡してください。\n")
+
+
+def _error_embed(description: str, title: str = "エラー") -> discord.Embed:
+    return discord.Embed(title=title, description=description, color=0xff0000)
+
+
+ERROR_EMBED = _error_embed("エラーが発生しました。管理者に連絡してください。\n", title="Error!")
 DM_REJECTED_MESSAGE = "このBotとの会話はサーバーでのみ使用できます。"
+DM_REJECTED_EMBED = _error_embed(DM_REJECTED_MESSAGE)
 SUMABRA_CHARA = ["マリオ", "マルス", "ピクミン&オリマー", "クラウド", "ドンキーコング", "ルキナ", "ルカリオ", "カムイ", "リンク", "こどもリンク", "ロボット", "ベヨネッタ", "サムス", "ガノンドロフ", "トゥーンリンク", "インクリング", "ダークサムス", "ミュウツー", "ウルフ", "リドリー", "ヨッシー", "ロイ", "むらびと", "シモン", "カービィ", "クロム", "ロックマン", "リヒター", "フォックス", "Mr.ゲーム&ウォッチ", "Wii Fit トレーナー", "キングクルール", "ピカチュウ", "メタナイト", "ロゼッタ&チコ", "しずえ", "ルイージ", "ピット", "リトル・マック", "ガオガエン", "ネス", "ブラックピット", "ゲッコウガ",
                  "パックンフラワー", "キャプテン・ファルコン", "ゼロスーツサムス", "格闘Mii", "ジョーカー", "プリン", "ワリオ", "剣術Mii", "勇者", "ピーチ", "スネーク", "射撃Mii", "バンジョー&カズーイ", "デイジー", "アイク", "パルテナ", "テリー", "クッパ", "ゼニガメ", "パックマン", "ベレト／ベレス", "アイスクライマー", "フシギソウ", "ルフレ", "ミェンミェン", "シーク", "リザードン", "シュルク", "スティーブ／アレックス", "ゼルダ", "ディディーコング", "クッパ Jr.", "セフィロス", "ドクターマリオ", "リュカ", "ダックハント", "ホムラ", "ピチュー", "ソニック", "リュウ", "ヒカリ", "ファルコ", "デデデ", "ケン", "カズヤ", "ソラ"]
 
@@ -87,7 +93,7 @@ async def talk(interaction: discord.Interaction, message: str, image: discord.At
     await interaction.response.defer(thinking=True)
     # DMからのコマンドは拒否
     if isinstance(interaction.channel, discord.DMChannel):
-        await interaction.followup.send(DM_REJECTED_MESSAGE, ephemeral=True)
+        await interaction.followup.send(embed=DM_REJECTED_EMBED, ephemeral=True)
         return
 
     image_url = image.url if image else None
@@ -121,7 +127,7 @@ async def on_message(message):
 
         # DMからは拒否
         if isinstance(message.channel, discord.DMChannel):
-            await message.channel.send(DM_REJECTED_MESSAGE)
+            await message.channel.send(embed=DM_REJECTED_EMBED)
             return
 
         # タイピングインジケータを表示しながらAI応答取得と送信
@@ -144,19 +150,14 @@ async def search(interaction: discord.Interaction, query: str):
         f"[/search] user={interaction.user} guild={interaction.guild} query={query[:50]}")
     # DMからのコマンドは拒否
     if isinstance(interaction.channel, discord.DMChannel):
-        await interaction.response.send_message(DM_REJECTED_MESSAGE, ephemeral=True)
+        await interaction.response.send_message(embed=DM_REJECTED_EMBED, ephemeral=True)
         return
 
     await interaction.response.defer(thinking=True)
 
     # Perplexityが利用可能かチェック
     if not ai_mgr.perplexity_client:
-        error_embed = discord.Embed(
-            title="検索エラー",
-            description="Web検索機能が利用できません。",
-            color=0xff0000
-        )
-        await interaction.followup.send(embed=error_embed)
+        await interaction.followup.send(embed=_error_embed("Web検索機能が利用できません。", title="検索エラー"))
         return
 
     query_quoted = f"> {query}"
@@ -182,12 +183,9 @@ async def search(interaction: discord.Interaction, query: str):
 
     except Exception as e:
         logger.error(f"[/search] Error: {e}")
-        error_embed = discord.Embed(
-            title="検索エラー",
-            description=f"検索中にエラーが発生しました: {str(e)}",
-            color=0xff0000
-        )
-        await interaction.followup.send(query_quoted, embed=error_embed)
+        await interaction.followup.send(
+            query_quoted,
+            embed=_error_embed(f"検索中にエラーが発生しました: {str(e)}", title="検索エラー"))
 
 
 @bot.tree.command(name="image", description="画像を検索")
@@ -195,7 +193,7 @@ async def image(interaction: discord.Interaction, query: str):
     logger.info(
         f"[/image] user={interaction.user} guild={interaction.guild} query={query[:50]}")
     if isinstance(interaction.channel, discord.DMChannel):
-        await interaction.response.send_message(DM_REJECTED_MESSAGE, ephemeral=True)
+        await interaction.response.send_message(embed=DM_REJECTED_EMBED, ephemeral=True)
         return
 
     await interaction.response.defer(thinking=True)
@@ -216,10 +214,7 @@ async def image(interaction: discord.Interaction, query: str):
 
     except Exception as e:
         logger.error(f"[/image] Error: {e}")
-        await interaction.followup.send(
-            f"> {query}",
-            embed=discord.Embed(title="検索エラー", description=str(e), color=0xff0000)
-        )
+        await interaction.followup.send(f"> {query}", embed=_error_embed(str(e), title="検索エラー"))
 
 
 @bot.tree.command(name="r", description="数字をランダム出力")
@@ -248,13 +243,13 @@ async def remind(interaction: discord.Interaction, time: str, message: str):
     logger.info(
         f"[/remind] user={interaction.user} guild={interaction.guild} time={time} message={message[:50]}")
     if isinstance(interaction.channel, discord.DMChannel):
-        await interaction.response.send_message(DM_REJECTED_MESSAGE, ephemeral=True)
+        await interaction.response.send_message(embed=DM_REJECTED_EMBED, ephemeral=True)
         return
 
     try:
         remind_at = parse_datetime(time)
     except ReminderTimeError as e:
-        await interaction.response.send_message(str(e), ephemeral=True)
+        await interaction.response.send_message(embed=_error_embed(str(e)), ephemeral=True)
         return
 
     # 日本語キーボードでは \ キーが円記号(¥, U+00A5)として入力される環境があるため両対応
@@ -285,7 +280,7 @@ async def remind(interaction: discord.Interaction, time: str, message: str):
 async def remind_list(interaction: discord.Interaction, mine: bool = False):
     logger.info(f"[/remind_list] user={interaction.user} guild={interaction.guild} mine={mine}")
     if isinstance(interaction.channel, discord.DMChannel):
-        await interaction.response.send_message(DM_REJECTED_MESSAGE, ephemeral=True)
+        await interaction.response.send_message(embed=DM_REJECTED_EMBED, ephemeral=True)
         return
 
     reminders = await reminder_store.list_by_guild(interaction.guild.id)
@@ -320,12 +315,13 @@ async def remind_list(interaction: discord.Interaction, mine: bool = False):
 async def remind_cancel(interaction: discord.Interaction, no: int):
     logger.info(f"[/remind_cancel] user={interaction.user} no={no}")
     if isinstance(interaction.channel, discord.DMChannel):
-        await interaction.response.send_message(DM_REJECTED_MESSAGE, ephemeral=True)
+        await interaction.response.send_message(embed=DM_REJECTED_EMBED, ephemeral=True)
         return
 
     reminders = await reminder_store.list_by_guild(interaction.guild.id)
     if no < 1 or no > len(reminders):
-        await interaction.response.send_message("指定された番号のリマインダーが見つかりません。", ephemeral=True)
+        await interaction.response.send_message(
+            embed=_error_embed("指定された番号のリマインダーが見つかりません。"), ephemeral=True)
         return
 
     target = reminders[no - 1]
