@@ -1,10 +1,14 @@
 import os
 import discord
+from discord import app_commands
 from discord.ext.commands import Bot
+from discord.ext import tasks
 import api
 from ai import AIManager, AIError
+from reminder import JST, ReminderStore, ReminderTimeError, parse_datetime
 import traceback
 import random
+from datetime import datetime, timezone
 from ddgs import DDGS
 
 import sys
@@ -20,6 +24,7 @@ discord_logger.setLevel(logging.INFO)
 
 API = api.API()
 ai_mgr = AIManager()
+reminder_store = ReminderStore()
 bot = Bot(command_prefix='$', intents=discord.Intents.all())
 ERROR_EMBED = discord.Embed(
     title="Error!", color=0xff0000, description="エラーが発生しました。管理者に連絡してください。\n")
@@ -34,8 +39,36 @@ async def on_ready():
         await bot.tree.sync(guild=discord.Object(id=server.id))
 
     await bot.tree.sync()
+
+    await reminder_store.init()
+    if not check_reminders.is_running():
+        check_reminders.start()
+
     logger.info(f"python-version：{sys.version}")
     logger.info(f"{bot.user}:起動完了")
+
+
+@tasks.loop(seconds=30)
+async def check_reminders():
+    try:
+        due = await reminder_store.get_due(datetime.now(timezone.utc))
+    except Exception as e:
+        logger.error(f"[reminder] 取得エラー: {e}")
+        return
+
+    for reminder in due:
+        await reminder_store.delete(reminder.id)
+        channel = bot.get_channel(reminder.channel_id)
+        if channel is None:
+            logger.warning(
+                f"[reminder] channel not found id={reminder.id} channel_id={reminder.channel_id}")
+            continue
+        creator = _display_name(channel.guild, reminder.user_id) if channel.guild else str(reminder.user_id)
+        content = f"{reminder.message}\n\n-# ⏰ リマインダー • {creator}が設定"
+        try:
+            await channel.send(content)
+        except discord.HTTPException as e:
+            logger.error(f"[reminder] 送信エラー id={reminder.id}: {e}")
 
 
 @bot.event
@@ -202,6 +235,109 @@ async def r_suma(interaction):
     chara_no = random.randint(0, len(SUMABRA_CHARA)-1)
     chara = SUMABRA_CHARA[chara_no]
     await interaction.response.send_message(chara)
+
+
+def _display_name(guild: discord.Guild, user_id: int) -> str:
+    member = guild.get_member(user_id)
+    return member.display_name if member else f"<@{user_id}>"
+
+
+@bot.tree.command(name="remind", description="指定した日時にメッセージを送信するリマインダーを設定")
+@app_commands.describe(message="改行したい場合は \\n（または ¥n）と入力してください")
+async def remind(interaction: discord.Interaction, time: str, message: str):
+    logger.info(
+        f"[/remind] user={interaction.user} guild={interaction.guild} time={time} message={message[:50]}")
+    if isinstance(interaction.channel, discord.DMChannel):
+        await interaction.response.send_message(DM_REJECTED_MESSAGE, ephemeral=True)
+        return
+
+    try:
+        remind_at = parse_datetime(time)
+    except ReminderTimeError as e:
+        await interaction.response.send_message(str(e), ephemeral=True)
+        return
+
+    # 日本語キーボードでは \ キーが円記号(¥, U+00A5)として入力される環境があるため両対応
+    message = message.replace("\\n", "\n").replace("¥n", "\n")
+    reminder_id = await reminder_store.add(
+        guild_id=interaction.guild.id,
+        channel_id=interaction.channel.id,
+        user_id=interaction.user.id,
+        message=message,
+        remind_at=remind_at,
+    )
+
+    # サーバー全体の並び順に基づく表示用番号を算出（/remind_list, /remind_cancelと共通の番号体系）
+    reminders = await reminder_store.list_by_guild(interaction.guild.id)
+    display_no = next((i for i, r in enumerate(reminders, start=1)
+                       if r.id == reminder_id), len(reminders))
+
+    remind_at_jst = remind_at.astimezone(JST)
+    embed = discord.Embed(title="リマインダーを設定しました", color=0x57F287)
+    embed.set_author(name=f"No. {display_no}")
+    embed.add_field(name="日時", value=remind_at_jst.strftime('%Y-%m-%d %H:%M'), inline=False)
+    embed.add_field(name="内容", value=message, inline=False)
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+
+@bot.tree.command(name="remind_list", description="設定中のリマインダー一覧を表示（サーバー全体）")
+@app_commands.describe(mine="自分が設定したものだけに絞り込むか")
+async def remind_list(interaction: discord.Interaction, mine: bool = False):
+    logger.info(f"[/remind_list] user={interaction.user} guild={interaction.guild} mine={mine}")
+    if isinstance(interaction.channel, discord.DMChannel):
+        await interaction.response.send_message(DM_REJECTED_MESSAGE, ephemeral=True)
+        return
+
+    reminders = await reminder_store.list_by_guild(interaction.guild.id)
+    numbered = list(enumerate(reminders, start=1))
+    if mine:
+        numbered = [(no, r) for no, r in numbered if r.user_id == interaction.user.id]
+
+    title = "リマインダー一覧（自分の分）" if mine else "リマインダー一覧（サーバー全体）"
+    embed = discord.Embed(title=title, color=0x5865F2)
+
+    if not numbered:
+        embed.description = "設定中のリマインダーはありません。"
+        await interaction.response.send_message(embed=embed)
+        return
+
+    for no, r in numbered:
+        remind_at_jst = r.remind_at.astimezone(JST)
+        oneline_message = r.message.replace("\n", " / ")
+        preview = oneline_message if len(oneline_message) <= 50 else oneline_message[:50] + "…"
+        creator = _display_name(interaction.guild, r.user_id)
+        embed.add_field(
+            name=f"No. {no}",
+            value=f"{remind_at_jst.strftime('%Y-%m-%d %H:%M')} ・ 設定: {creator}\n{preview}",
+            inline=False,
+        )
+
+    await interaction.response.send_message(embed=embed)
+
+
+@bot.tree.command(name="remind_cancel", description="リマインダーをキャンセル")
+@app_commands.describe(no="/remind_list で確認できる番号")
+async def remind_cancel(interaction: discord.Interaction, no: int):
+    logger.info(f"[/remind_cancel] user={interaction.user} no={no}")
+    if isinstance(interaction.channel, discord.DMChannel):
+        await interaction.response.send_message(DM_REJECTED_MESSAGE, ephemeral=True)
+        return
+
+    reminders = await reminder_store.list_by_guild(interaction.guild.id)
+    if no < 1 or no > len(reminders):
+        await interaction.response.send_message("指定された番号のリマインダーが見つかりません。", ephemeral=True)
+        return
+
+    target = reminders[no - 1]
+    await reminder_store.delete(target.id)
+    oneline_message = target.message.replace("\n", " / ")
+    preview = oneline_message if len(oneline_message) <= 50 else oneline_message[:50] + "…"
+
+    embed = discord.Embed(title="リマインダーをキャンセルしました", color=0xE67E22)
+    embed.set_author(name=f"No. {no}")
+    embed.add_field(name="内容", value=preview, inline=False)
+    embed.add_field(name="キャンセル者", value=interaction.user.display_name, inline=False)
+    await interaction.response.send_message(embed=embed)
 
 
 @bot.tree.command(name="dog", description="わんちゃん")

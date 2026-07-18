@@ -6,6 +6,8 @@ xAI GrokとPerplexityを統合したDiscordボットです。サーバー内でA
 
 - **AIチャット**: メンションまたは `/talk` コマンドでAIアシスタントと会話
 - **Web検索**: `/search` コマンドでPerplexity APIを使用したWeb検索と要約（オプション）
+- **画像検索**: `/image` コマンドでDuckDuckGo画像検索
+- **リマインダー**: `/remind` で指定日時にメッセージを送信。メッセージ入力欄で`@`メンションを選択すればその相手にも通知される。一覧はサーバー全体で共有され、誰でも確認・キャンセルできる
 - **ランダムコマンド**: `/r` で数字のランダム生成、`/r_sma` でスマブラキャラクター選択
 - **犬画像取得**: `/dog` でランダムな犬の画像を取得
 
@@ -57,9 +59,18 @@ python main.py
 |---------|------|--------|
 | `/talk <message>` | AIアシスタントと会話 | `/talk こんにちは` |
 | `/search <query>` | Webを検索して要約 | `/search Python 最新情報` |
+| `/image <query>` | 画像を検索 | `/image 猫` |
+| `/remind <time> <message>` | 指定日時にメッセージを送信するリマインダーを設定（コマンド実行チャンネルに送信、送信時に設定者名を自動付記） | `/remind 2026-07-15 09:00 会議の時間です @taro` |
+| `/remind_list [mine]` | サーバー全体の設定中リマインダー一覧を表示（`mine:true`で自分の分だけに絞り込み） | `/remind_list` |
+| `/remind_cancel <no>` | リマインダーをキャンセル（誰でも取消可能） | `/remind_cancel 3` |
 | `/r <num>` | 1からnumまでのランダムな整数を生成 | `/r 100` |
 | `/r_sma` | スマブラSPのキャラクターをランダムに選択 | `/r_sma` |
 | `/dog` | ランダムな犬の画像を取得 | `/dog` |
+
+`time`は以下の形式に対応しています（すべてJST基準）:
+- `YYYY-MM-DD HH:MM`（例: `2026-07-15 09:00`）
+- `MM-DD HH:MM`（今年として解釈、例: `07-15 09:00`）
+- `HH:MM`（今日。すでに過ぎていれば翌日、例: `09:00`）
 
 ### メンション
 
@@ -86,6 +97,10 @@ discord_bot/
 │   └── clients/
 │       ├── grok.py      # xAI Grok API
 │       └── perplexity.py # Perplexity API
+├── reminder/            # リマインダー機能
+│   ├── store.py         # SQLiteによる永続化
+│   └── parser.py        # 日時文字列のパース
+├── data/                # SQLiteデータベース（Gitには含まれません）
 └── utils/
     └── logger.py        # ロガー設定
 ```
