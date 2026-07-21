@@ -45,9 +45,9 @@ def _is_kana(text: str) -> bool:
     )
 
 
-def _token_mora_counts(text: str):
-    """トークンごとのモーラ数のリストを返す。読みが解決できないトークンがあればNoneを返す"""
-    counts = []
+def _tokenize(text: str):
+    """トークンごとの(表層形, モーラ数)のリストを返す。読みが解決できないトークンがあればNoneを返す"""
+    result = []
     for token in _tokenizer.tokenize(text):
         reading = token.reading
         if reading == '*':
@@ -55,55 +55,75 @@ def _token_mora_counts(text: str):
                 reading = token.surface
             else:
                 return None
-        counts.append(count_mora(reading))
-    return counts
+        result.append((token.surface, count_mora(reading)))
+    return result
 
 
-def _check_three_lines(text: str) -> bool:
+def _split_three_lines(text: str):
+    """3行に分かれたテキストがそれぞれ5・7・5モーラならその3行をそのまま返す"""
     lines = [line.strip() for line in text.split('\n') if line.strip()]
     if len(lines) != 3:
-        return False
+        return None
 
     for line, expected in zip(lines, _TARGET_MORA):
-        counts = _token_mora_counts(line)
-        if counts is None or sum(counts) != expected:
-            return False
-    return True
+        tokens = _tokenize(line)
+        if tokens is None or sum(m for _, m in tokens) != expected:
+            return None
+    return lines
 
 
-def _check_single_line(text: str) -> bool:
-    counts = _token_mora_counts(text)
-    if counts is None:
-        return False
+def _split_single_line(text: str):
+    """1行のテキストを単語境界に沿って5・7・5モーラの3行に分割して返す"""
+    tokens = _tokenize(text)
+    if tokens is None:
+        return None
 
-    total = sum(counts)
-    if total != _TOTAL_MORA:
-        return False
+    if sum(m for _, m in tokens) != _TOTAL_MORA:
+        return None
 
-    cumulative = 0
-    boundaries = set()
-    for c in counts:
-        cumulative += c
-        boundaries.add(cumulative)
+    cumulative_mora = 0
+    cumulative_chars = 0
+    boundary_1_pos = None
+    boundary_2_pos = None
+    for surface, mora in tokens:
+        cumulative_mora += mora
+        cumulative_chars += len(surface)
+        if cumulative_mora == _BOUNDARY_1:
+            boundary_1_pos = cumulative_chars
+        elif cumulative_mora == _BOUNDARY_2:
+            boundary_2_pos = cumulative_chars
 
-    return _BOUNDARY_1 in boundaries and _BOUNDARY_2 in boundaries
+    if boundary_1_pos is None or boundary_2_pos is None:
+        return None
+
+    return [
+        text[:boundary_1_pos],
+        text[boundary_1_pos:boundary_2_pos],
+        text[boundary_2_pos:],
+    ]
+
+
+def split_575(text: str):
+    """5-7-5と判定できれば[5音, 7音, 5音]の3行に分割して返す。判定できなければNoneを返す"""
+    cleaned = _clean(text)
+    if not cleaned:
+        return None
+
+    try:
+        if '\n' in cleaned:
+            lines = _split_three_lines(cleaned)
+            if lines is not None:
+                return lines
+            # 改行があっても3行に整形されていない場合は改行を除いて1行判定にフォールバック
+            cleaned = cleaned.replace('\n', '')
+            if not cleaned:
+                return None
+        return _split_single_line(cleaned)
+    except Exception as e:
+        logger.warning(f"[senryu] 解析エラー: {e}")
+        return None
 
 
 def is_senryu(text: str) -> bool:
     """テキストが5-7-5（モーラ数・単語境界基準）かどうかを判定する"""
-    cleaned = _clean(text)
-    if not cleaned:
-        return False
-
-    try:
-        if '\n' in cleaned:
-            if _check_three_lines(cleaned):
-                return True
-            # 改行があっても3行に整形されていない場合は改行を除いて1行判定にフォールバック
-            cleaned = cleaned.replace('\n', '')
-            if not cleaned:
-                return False
-        return _check_single_line(cleaned)
-    except Exception as e:
-        logger.warning(f"[senryu] 解析エラー: {e}")
-        return False
+    return split_575(text) is not None
