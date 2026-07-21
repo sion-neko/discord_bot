@@ -6,6 +6,7 @@ from discord.ext import tasks
 import api
 from ai import AIManager, AIError
 from reminder import JST, ReminderStore, ReminderTimeError, parse_datetime
+from senryu import is_senryu
 import traceback
 import random
 from datetime import datetime, timezone
@@ -113,6 +114,16 @@ async def on_message(message):
     # Bot自身のメッセージは無視
     if message.author.bot:
         return
+
+    # 5-7-5（川柳）を検出
+    content_stripped = message.content.strip()
+    if content_stripped and is_senryu(content_stripped):
+        logger.info(
+            f"[575] user={message.author} guild={message.guild} message={content_stripped[:50]}")
+        try:
+            await message.reply("ナイス川柳！", mention_author=False)
+        except discord.HTTPException as e:
+            logger.error(f"[575] 送信エラー: {e}")
 
     # Botへのメンションをチェック
     if bot.user in message.mentions:
