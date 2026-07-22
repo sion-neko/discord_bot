@@ -91,6 +91,16 @@ class SenryuStore:
             row = await cursor.fetchone()
             return row[0]
 
+    async def recent_by_guild(self, guild_id: int, limit: int = 5) -> list[Senryu]:
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            cursor = await db.execute(
+                "SELECT * FROM senryus WHERE guild_id = ? ORDER BY created_at DESC LIMIT ?",
+                (guild_id, limit),
+            )
+            rows = await cursor.fetchall()
+            return [self._row_to_senryu(row) for row in rows]
+
     async def list_by_guild(self, guild_id: int) -> list[Senryu]:
         async with aiosqlite.connect(self.db_path) as db:
             db.row_factory = aiosqlite.Row

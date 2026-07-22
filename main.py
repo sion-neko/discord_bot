@@ -361,6 +361,36 @@ async def remind_cancel(interaction: discord.Interaction, no: int):
     await interaction.response.send_message(embed=embed)
 
 
+@bot.tree.command(name="senryu_list", description="直近5件の川柳を表示")
+async def senryu_list(interaction: discord.Interaction):
+    logger.info(f"[/senryu_list] user={interaction.user} guild={interaction.guild}")
+    if isinstance(interaction.channel, discord.DMChannel):
+        await interaction.response.send_message(embed=DM_REJECTED_EMBED, ephemeral=True)
+        return
+
+    senryus = await senryu_store.recent_by_guild(interaction.guild.id, limit=5)
+
+    embed = discord.Embed(title="川柳一覧（直近5件）", color=0x5865F2)
+
+    if not senryus:
+        embed.description = "まだ川柳は検出されていません。"
+        await interaction.response.send_message(embed=embed)
+        return
+
+    for s in senryus:
+        author = _display_name(interaction.guild, s.user_id)
+        haiku = f"{s.line1} / {s.line2} / {s.line3}"
+        created_jst = s.created_at.astimezone(JST)
+        link = f"https://discord.com/channels/{s.guild_id}/{s.channel_id}/{s.message_id}"
+        embed.add_field(
+            name=haiku,
+            value=f"{created_jst.strftime('%Y-%m-%d %H:%M')} ・ {author} ・ [メッセージへ]({link})",
+            inline=False,
+        )
+
+    await interaction.response.send_message(embed=embed)
+
+
 @bot.tree.command(name="dog", description="わんちゃん")
 async def dog(interaction):
     await interaction.response.defer()
