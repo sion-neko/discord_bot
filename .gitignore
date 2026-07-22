@@ -5,3 +5,4 @@ venv
 .claude
 logs/
 data/
+.pytest_cache

@@ -19,6 +19,7 @@ _SMALL_YOON = set('ァィゥェォヵヶャュョ')
 _CUSTOM_EMOJI_RE = re.compile(r'<a?:\w+:\d+>')
 _MENTION_RE = re.compile(r'<@!?\d+>|<@&\d+>|<#\d+>')
 _URL_RE = re.compile(r'https?://\S+')
+_SENTENCE_SPLIT_RE = re.compile(r'[。\n！？!?]+')
 
 _TARGET_MORA = (5, 7, 5)
 _TOTAL_MORA = sum(_TARGET_MORA)
@@ -59,21 +60,22 @@ def _tokenize(text: str):
     return result
 
 
-def _split_three_lines(text: str):
-    """3行に分かれたテキストがそれぞれ5・7・5モーラならその3行をそのまま返す"""
-    lines = [line.strip() for line in text.split('\n') if line.strip()]
-    if len(lines) != 3:
-        return None
+def _sentences(text: str):
+    """。\n！？で文単位に分割する"""
+    return [s.strip() for s in _SENTENCE_SPLIT_RE.split(text) if s.strip()]
 
-    for line, expected in zip(lines, _TARGET_MORA):
-        tokens = _tokenize(line)
+
+def _match_three_sentences(sentences):
+    """連続する3文がそれぞれ5・7・5モーラならその3文をそのまま返す"""
+    for sentence, expected in zip(sentences, _TARGET_MORA):
+        tokens = _tokenize(sentence)
         if tokens is None or sum(m for _, m in tokens) != expected:
             return None
-    return lines
+    return list(sentences[:3])
 
 
-def _split_single_line(text: str):
-    """1行のテキストを単語境界に沿って5・7・5モーラの3行に分割して返す"""
+def _split_sentence(text: str):
+    """1文を単語境界に沿って5・7・5モーラの3行に分割して返す"""
     tokens = _tokenize(text)
     if tokens is None:
         return None
@@ -104,21 +106,33 @@ def _split_single_line(text: str):
 
 
 def split_575(text: str):
-    """5-7-5と判定できれば[5音, 7音, 5音]の3行に分割して返す。判定できなければNoneを返す"""
+    """
+    テキスト中に5-7-5があれば[5音, 7音, 5音]の3行に分割して返す。
+    「。」「\\n」「！」「？」で文に分割し、
+    (1) 連続する3文がそれぞれ5・7・5になっている箇所
+    (2) 単体で5-7-5（17モーラ・単語境界一致）になっている文
+    のいずれかが見つかればそれを返す。見つからなければNoneを返す。
+    """
     cleaned = _clean(text)
     if not cleaned:
         return None
 
     try:
-        if '\n' in cleaned:
-            lines = _split_three_lines(cleaned)
-            if lines is not None:
-                return lines
-            # 改行があっても3行に整形されていない場合は改行を除いて1行判定にフォールバック
-            cleaned = cleaned.replace('\n', '')
-            if not cleaned:
-                return None
-        return _split_single_line(cleaned)
+        sentences = _sentences(cleaned)
+        if not sentences:
+            return None
+
+        for i in range(len(sentences) - 2):
+            matched = _match_three_sentences(sentences[i:i + 3])
+            if matched is not None:
+                return matched
+
+        for sentence in sentences:
+            result = _split_sentence(sentence)
+            if result is not None:
+                return result
+
+        return None
     except Exception as e:
         logger.warning(f"[senryu] 解析エラー: {e}")
         return None
