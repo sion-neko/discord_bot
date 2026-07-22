@@ -122,9 +122,9 @@ async def on_message(message):
         if lines:
             logger.info(
                 f"[575] user={message.author} guild={message.guild} message={content_stripped[:50]}")
-            haiku = "\n".join(f"> {line}" for line in lines)
+            haiku = "「"+" ".join(lines)+"」"
             try:
-                await message.reply(f"{haiku}\n\nナイス川柳！", mention_author=False)
+                await message.reply(f"川柳、いただきました\n{haiku}", mention_author=False)
             except discord.HTTPException as e:
                 logger.error(f"[575] 送信エラー: {e}")
 
