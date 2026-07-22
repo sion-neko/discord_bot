@@ -6,7 +6,7 @@ from discord.ext import tasks
 import api
 from ai import AIManager, AIError
 from reminder import JST, ReminderStore, ReminderTimeError, parse_datetime
-from senryu import split_575
+from senryu import split_575, SenryuStore
 import traceback
 import random
 from datetime import datetime, timezone
@@ -26,6 +26,7 @@ discord_logger.setLevel(logging.INFO)
 API = api.API()
 ai_mgr = AIManager()
 reminder_store = ReminderStore()
+senryu_store = SenryuStore()
 bot = Bot(command_prefix='$', intents=discord.Intents.all())
 
 
@@ -48,6 +49,7 @@ async def on_ready():
     await bot.tree.sync()
 
     await reminder_store.init()
+    await senryu_store.init()
     if not check_reminders.is_running():
         check_reminders.start()
 
@@ -117,16 +119,25 @@ async def on_message(message):
 
     # 5-7-5（川柳）を検出
     content_stripped = message.content.strip()
-    if content_stripped:
+    if content_stripped and message.guild is not None:
         lines = split_575(content_stripped)
         if lines:
             logger.info(
                 f"[575] user={message.author} guild={message.guild} message={content_stripped[:50]}")
-            haiku = "「"+" ".join(lines)+"」"
             try:
-                await message.reply(f"川柳、いただきました\n{haiku}", mention_author=False)
+                count = await senryu_store.add(
+                    guild_id=message.guild.id,
+                    channel_id=message.channel.id,
+                    user_id=message.author.id,
+                    message_id=message.id,
+                    lines=lines,
+                )
+                haiku = "「"+" ".join(lines)+"」"
+                await message.reply(f"川柳、いただきました（{count}個目）\n{haiku}", mention_author=False)
             except discord.HTTPException as e:
                 logger.error(f"[575] 送信エラー: {e}")
+            except Exception as e:
+                logger.error(f"[575] DB保存エラー: {e}")
 
     # Botへのメンションをチェック
     if bot.user in message.mentions:
